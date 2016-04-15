@@ -278,7 +278,11 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 					case '.':
 						finish_token( ".", DANSH_TOKEN_TYPE_DOT, outTokens );
 						break;
-
+					
+					case '#':
+						return;	// We parse one line, comment goes to end of line. we're done.
+						break;
+					
 					default:
 						currType = DANSH_TOKEN_TYPE_IDENTIFIER;
 						currTokenString.append(1, currChar);
@@ -335,6 +339,11 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						finish_token( ".", DANSH_TOKEN_TYPE_DOT, outTokens );
 						break;
 
+					case '#':
+						finish_token( currTokenString, currType, outTokens );
+						return;	// We parse one line, comment goes to end of line. we're done.
+						break;
+					
 					default:
 						currTokenString.append(1, currChar);
 				}
@@ -446,6 +455,11 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						finish_token( ",", DANSH_TOKEN_TYPE_COMMA, outTokens );
 						break;
 
+					case '#':
+						finish_token( currTokenString, currType, outTokens );
+						return;	// We parse one line, comment goes to end of line. we're done.
+						break;
+					
 					default:
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
