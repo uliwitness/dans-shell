@@ -181,6 +181,22 @@ void	initialize()
 			chdir( params.params[0].name.c_str() );
 		return dansh_statement();
 	};
+	
+	gBuiltInCommands["~"] = []( dansh_statement params )
+	{
+		dansh_statement		currentDir;
+		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
+		currentDir.name = user_home_dir();
+		return currentDir;
+	};
+	
+	gBuiltInCommands["/"] = []( dansh_statement params )
+	{
+		dansh_statement		currentDir;
+		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
+		currentDir.name = "/";
+		return currentDir;
+	};
 }
 
 
