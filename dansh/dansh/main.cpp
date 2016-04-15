@@ -160,13 +160,32 @@ void	initialize()
 		return dansh_statement();
 	};
 	
-	gBuiltInCommands["pwd"] = []( dansh_statement params )
+	dansh_built_in_lambda	pwdCommand = []( dansh_statement params )
 	{
 		dansh_statement		currentDir;
 		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
 		char*	currentWorkingDirectory = getcwd( NULL, 0 );
 		if( currentWorkingDirectory )
 		{
+			currentDir.name = currentWorkingDirectory;
+			free( currentWorkingDirectory );
+		}
+		return currentDir;
+	};
+	gBuiltInCommands["pwd"] = pwdCommand;
+	gBuiltInCommands["."] = pwdCommand;
+	gBuiltInCommands[".."] = []( dansh_statement params )
+	{
+		dansh_statement		currentDir;
+		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
+		char*	currentWorkingDirectory = getcwd( NULL, 0 );
+		if( currentWorkingDirectory )
+		{
+			char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
+			if( lastPathComponent && lastPathComponent != currentWorkingDirectory )	// We found a '/' and the whole path is not "/"?
+				*lastPathComponent = '\0';
+			if( lastPathComponent == currentWorkingDirectory )
+				currentWorkingDirectory[1] = '\0';	// Truncate, but leave the "/" there.
 			currentDir.name = currentWorkingDirectory;
 			free( currentWorkingDirectory );
 		}
@@ -490,12 +509,17 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		if( currToken->type == DANSH_TOKEN_TYPE_DOT )	// We support package names with a leading dot as a shorthand for current directory.
 		{
 			currToken++;
-			if( currToken == tokens.end() || currToken->type != DANSH_TOKEN_TYPE_IDENTIFIER )	// Grab first full identifier. Subsequent identifiers can then be parsed by our regular code:
+			while( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_DOT )
 			{
-				cerr << "Expected identifier after '.' operator." << endl;
-				return dansh_statement();
+				currStatement.name.append( currToken->text );	// Append this "." to the "." already in the name.
+				currToken++;
 			}
-			currStatement.name.append( currToken->text );
+			if( currToken == tokens.end() || currToken->type != DANSH_TOKEN_TYPE_IDENTIFIER )	// No full identifier after this? Guess it's the special "." or ".." function.
+			{
+				currToken--;	// Backtrack, the currToken++ below will skip this token.
+			}
+			else
+				currStatement.name.append( currToken->text );	// Append identifier to the "." already here.
 		}
 		currToken++;
 		
