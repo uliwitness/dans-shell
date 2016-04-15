@@ -35,6 +35,10 @@ Currently, the built-in commands are:
 
 Output the current working directory.
 
+	cd( path )
+
+Change the current working directory to the given path, specified as a string.
+
 	exit()
 
 Quit Dan's Shell.

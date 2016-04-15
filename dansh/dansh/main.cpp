@@ -507,6 +507,13 @@ void	process_one_line( const string & currLine )
 				free( currentWorkingDirectory );
 			}
 		}
+		else if( currStatement.name.compare("cd") == 0 )
+		{
+			if( currStatement.params.size() < 1 )
+				cerr << "Expected directory path as first parameter of 'cd' command." << endl;
+			else
+				chdir( currStatement.params[0].name.c_str() );
+		}
 		else
 			cerr << "Unknown command \"" << currStatement.name.c_str() << "\"" << endl;
 	}
