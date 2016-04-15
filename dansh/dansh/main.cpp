@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 #include <cassert>
+#include <map>
 
 
 using namespace std;
@@ -55,12 +56,44 @@ class dansh_statement
 public:
 	dansh_statement() : type(DANSH_STATEMENT_TYPE_FUNCTION) {}
 	
+	dansh_statement		eval() const;
+	
 	void	print( ostream& outStream ) const;
 	
 	string					name;
 	vector<dansh_statement>	params;
 	dansh_statement_type	type;
 };
+
+
+typedef function<dansh_statement(dansh_statement& stmt)> dansh_built_in_lambda;
+
+map<string,dansh_built_in_lambda>	gBuiltInCommands;
+
+
+dansh_statement		dansh_statement::eval() const
+{
+	if( type == DANSH_STATEMENT_TYPE_FUNCTION )
+	{
+		dansh_statement		evaluated;
+		evaluated.name = name;
+		evaluated.type = type;
+		for( const dansh_statement& currParam : params )
+		{
+			evaluated.params.push_back( currParam.eval() );
+		}
+		
+		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(name);
+		if( foundCommand == gBuiltInCommands.end() )
+		{
+			cerr << "Unknown command \"" << name << "\"." << endl;
+			return dansh_statement();
+		}
+		return foundCommand->second( evaluated );
+	}
+	else
+		return *this;
+}
 
 
 void	dansh_statement::print( ostream& outStream ) const
@@ -120,6 +153,34 @@ void	initialize()
 	string	userHomeDir = user_home_dir();
 	if( userHomeDir.length() != 0 )
 		chdir( userHomeDir.c_str() );
+	
+	gBuiltInCommands["exit"] = []( dansh_statement params )
+	{
+		gKeepRunning = false;
+		return dansh_statement();
+	};
+	
+	gBuiltInCommands["pwd"] = []( dansh_statement params )
+	{
+		dansh_statement		currentDir;
+		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
+		char*	currentWorkingDirectory = getcwd( NULL, 0 );
+		if( currentWorkingDirectory )
+		{
+			currentDir.name = currentWorkingDirectory;
+			free( currentWorkingDirectory );
+		}
+		return currentDir;
+	};
+	
+	gBuiltInCommands["cd"] = []( dansh_statement params )
+	{
+		if( params.params.size() < 1 )
+			cerr << "Expected directory path as first parameter of 'cd' command." << endl;
+		else
+			chdir( params.params[0].name.c_str() );
+		return dansh_statement();
+	};
 }
 
 
@@ -494,31 +555,9 @@ void	process_one_line( const string & currLine )
 //	currStatement.print(cout);
 //	cout << endl;
 	
-	if( currStatement.type == DANSH_STATEMENT_TYPE_FUNCTION )
-	{
-		if( currStatement.name.compare("exit") == 0 )
-			gKeepRunning = false;
-		else if( currStatement.name.compare("pwd") == 0 )
-		{
-			char*	currentWorkingDirectory = getcwd( NULL, 0 );
-			if( currentWorkingDirectory )
-			{
-				cout << currentWorkingDirectory << endl;
-				free( currentWorkingDirectory );
-			}
-		}
-		else if( currStatement.name.compare("cd") == 0 )
-		{
-			if( currStatement.params.size() < 1 )
-				cerr << "Expected directory path as first parameter of 'cd' command." << endl;
-			else
-				chdir( currStatement.params[0].name.c_str() );
-		}
-		else
-			cerr << "Unknown command \"" << currStatement.name.c_str() << "\"" << endl;
-	}
-	else
-		cerr << "Expected a command, found \"" << currLine.c_str() << "\"" << endl;
+	currStatement = currStatement.eval();
+	if( currStatement.type == DANSH_STATEMENT_TYPE_STRING || currStatement.name.length() != 0 )
+		cout << currStatement.name << endl;
 }
 
 
