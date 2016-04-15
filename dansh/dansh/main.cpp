@@ -93,8 +93,9 @@ bool		gKeepRunning = true;
 dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken );
 
 
-void	initialize()
+string	user_home_dir()
 {
+	string	resultPath;
 	long	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
 	if( bufsize != -1 )
     {
@@ -105,10 +106,20 @@ void	initialize()
 		int				success = getpwuid_r( uid, &pw, buffer, bufsize, &result );
 		if( success == 0 && result )
 		{
-			chdir( result->pw_dir );
+			resultPath = result->pw_dir;
 		}
 		endpwent();
 	}
+	
+	return resultPath;
+}
+
+
+void	initialize()
+{
+	string	userHomeDir = user_home_dir();
+	if( userHomeDir.length() != 0 )
+		chdir( userHomeDir.c_str() );
 }
 
 
@@ -510,9 +521,20 @@ void	print_prompt()
 	char*	currentWorkingDirectory = getcwd( NULL, 0 );
 	if( currentWorkingDirectory )
 	{
-		char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
-		if( lastPathComponent )
-			cout << (lastPathComponent +1) << " ";
+		if( strcmp(currentWorkingDirectory,"/") == 0 )
+		{
+			cout << "/ ";
+		}
+		else if( user_home_dir().compare(currentWorkingDirectory) == 0 )
+		{
+			cout << "~ ";
+		}
+		else
+		{
+			char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
+			if( lastPathComponent )
+				cout << (lastPathComponent +1) << " ";
+		}
 		free( currentWorkingDirectory );
 	}
 	
@@ -527,7 +549,7 @@ void	print_prompt()
 		int				success = getpwuid_r( uid, &pw, buffer, bufsize, &result );
 		if( success == 0 && result )
 		{
-			cout << result->pw_name << " ";
+			cout << result->pw_name;
 		}
 		endpwent();
 	}
