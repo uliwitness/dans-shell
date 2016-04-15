@@ -22,7 +22,7 @@ using namespace std;
 
 typedef enum
 {
-	DANSH_TOKEN_TYPE_INVALID,
+	DANSH_TOKEN_TYPE_WHITESPACE,
 	DANSH_TOKEN_TYPE_IDENTIFIER,
 	DANSH_TOKEN_TYPE_OPENING_BRACKET,
 	DANSH_TOKEN_TYPE_CLOSING_BRACKET,
@@ -36,7 +36,7 @@ typedef enum
 class dansh_token
 {
 public:
-	dansh_token() : type(DANSH_TOKEN_TYPE_INVALID) {}
+	dansh_token() : type(DANSH_TOKEN_TYPE_WHITESPACE) {}
 	
 	dansh_token_type	type;
 	string				text;
@@ -215,7 +215,7 @@ void	finish_token( const string & currTokenString, dansh_token_type currType, ve
 
 void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 {
-	dansh_token_type		currType = DANSH_TOKEN_TYPE_INVALID;
+	dansh_token_type		currType = DANSH_TOKEN_TYPE_WHITESPACE;
 	string::difference_type	lineLength = currLine.length();
 	string					currTokenString;
 	bool					inEscapeSequence = false;
@@ -225,7 +225,7 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 		char	currChar = currLine[x];
 		switch( currType )
 		{
-			case DANSH_TOKEN_TYPE_INVALID:
+			case DANSH_TOKEN_TYPE_WHITESPACE:
 				switch( currChar )
 				{
 					case '"':
@@ -285,34 +285,34 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 					case '\n':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						break;
 					
 					case '(':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						finish_token( "(", DANSH_TOKEN_TYPE_OPENING_BRACKET, outTokens );
 						break;
 
 					case ')':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						finish_token( ")", DANSH_TOKEN_TYPE_CLOSING_BRACKET, outTokens );
 						break;
 
 					case ',':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						finish_token( ",", DANSH_TOKEN_TYPE_COMMA, outTokens );
 						break;
 
 					case '.':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						finish_token( ".", DANSH_TOKEN_TYPE_DOT, outTokens );
 						break;
 
@@ -334,7 +334,7 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						{
 							finish_token( currTokenString, currType, outTokens );
 							currTokenString.erase();
-							currType = DANSH_TOKEN_TYPE_INVALID;
+							currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						}
 						break;
 					
@@ -403,27 +403,27 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 					case '\n':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						break;
 					
 					case '(':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						finish_token( "(", DANSH_TOKEN_TYPE_OPENING_BRACKET, outTokens );
 						break;
 
 					case ')':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						finish_token( ")", DANSH_TOKEN_TYPE_CLOSING_BRACKET, outTokens );
 						break;
 
 					case ',':
 						finish_token( currTokenString, currType, outTokens );
 						currTokenString.erase();
-						currType = DANSH_TOKEN_TYPE_INVALID;
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						finish_token( ",", DANSH_TOKEN_TYPE_COMMA, outTokens );
 						break;
 
