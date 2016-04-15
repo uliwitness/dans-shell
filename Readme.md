@@ -1,7 +1,6 @@
-Dan's Shell
------------
+#Dan's Shell
 
-#Syntax:
+##Syntax
 
 To call a command, use the general syntax
 
@@ -28,7 +27,7 @@ Number. A number can consist only of numeric characters and may optionally conta
 a decimal point.
 
 
-#Built-in commands
+##Built-in commands
 
 Currently, the built-in commands are:
 
@@ -41,7 +40,7 @@ Output the current working directory.
 Quit Dan's Shell.
 
 
-#Concept
+##Concept
 
 The idea behind Dan's Shell is to provide a simple, familiar and regular syntax that
 encourages correct and secure code. In particular, the desire is to make it impossible
