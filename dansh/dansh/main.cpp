@@ -471,17 +471,17 @@ void	process_one_line( const string & currLine )
 	vector<dansh_token>	tokens;
 	tokenize( currLine, tokens );
 	
-	for( const dansh_token& currToken : tokens )
-	{
-		cout << "[" << currToken.text << "] ";
-	}
-	cout << endl;
+//	for( const dansh_token& currToken : tokens )
+//	{
+//		cout << "[" << currToken.text << "] ";
+//	}
+//	cout << endl;
 	
 	vector<dansh_token>::const_iterator	currToken = tokens.begin();
 	
 	dansh_statement	currStatement = parse_one_statement( tokens, currToken );
-	currStatement.print(cout);
-	cout << endl;
+//	currStatement.print(cout);
+//	cout << endl;
 	
 	if( currStatement.type == DANSH_STATEMENT_TYPE_FUNCTION )
 	{
