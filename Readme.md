@@ -33,7 +33,23 @@ Currently, the built-in commands are:
 
 	pwd()
 
-Output the current working directory.
+Output the current working directory. Another way to write this command is
+
+	.
+
+or even
+
+	.()
+
+Which has the same effect.
+
+	..
+
+similarly returns the directory containing the current directory, so that is the same as pwd() but with the last path component removed.
+
+	~
+
+Is also a valid function, and returns the current user's home directory.
 
 	cd( path )
 
@@ -42,6 +58,11 @@ Change the current working directory to the given path, specified as a string.
 	exit()
 
 Quit Dan's Shell.
+
+	# This is a comment
+
+To add comments to a line (most useful when running scripts), use the "#" character. Everything
+starting with the "#" character to the end of the line will be ignored.
 
 
 ##Concept
