@@ -1,28 +1,27 @@
-# Compiled Object files
-*.slo
-*.lo
 *.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-
-# Compiled Static libraries
-*.lai
+*.lo
 *.la
+*.al
+.libs
+*.so
+*.so.[0-9]*
 *.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+*.pyc
+*.pyo
+*.rej
+*~
+#*#
+.#*
+.*.swp
+.DS_Store
+*~.nib
+*.pbxuser
+*.mode1
+*.pbxuser
+*.mode1v3
+build
+xcuserdata
+*.xcworkspacedata
+*.xcworkspace
+.idea
+*.xcuserdata
