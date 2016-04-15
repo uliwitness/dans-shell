@@ -8,6 +8,11 @@
 
 #include <iostream>
 #include <string>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <memory>
+
 
 using namespace std;
 
@@ -15,10 +20,38 @@ using namespace std;
 bool		gKeepRunning = true;
 
 
+void	initialize()
+{
+	long	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+	if( bufsize != -1 )
+    {
+		uid_t			uid = geteuid();
+		struct passwd	pw = {};
+		struct passwd*	result = nullptr;
+		char			buffer[bufsize];
+		int				success = getpwuid_r( uid, &pw, buffer, bufsize, &result );
+		if( success == 0 && result )
+		{
+			chdir( result->pw_dir );
+		}
+		endpwent();
+	}
+}
+
+
 void	process_one_line( const string & currLine )
 {
-	if( currLine.compare("exit") == 0 )
+	if( currLine.compare("exit") == 0 || currLine.compare("exit()") == 0 )
 		gKeepRunning = false;
+	else if( currLine.compare("pwd()") == 0 )
+	{
+		char*	currentWorkingDirectory = getcwd( NULL, 0 );
+		if( currentWorkingDirectory )
+		{
+			cout << currentWorkingDirectory << endl;
+			free( currentWorkingDirectory );
+		}
+	}
 	else
 		cout << "Unknown command \"" << currLine.c_str() << "\"" << endl;
 }
@@ -26,12 +59,41 @@ void	process_one_line( const string & currLine )
 
 void	print_prompt()
 {
-	cout << "> ";
+	// Print current folder's name:
+	char*	currentWorkingDirectory = getcwd( NULL, 0 );
+	if( currentWorkingDirectory )
+	{
+		char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
+		if( lastPathComponent )
+			cout << (lastPathComponent +1) << " ";
+		free( currentWorkingDirectory );
+	}
+	
+	// Print current user's name:
+	long	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+	if( bufsize != -1 )
+    {
+		uid_t			uid = geteuid();
+		struct passwd	pw = {};
+		struct passwd*	result = nullptr;
+		char			buffer[bufsize];
+		int				success = getpwuid_r( uid, &pw, buffer, bufsize, &result );
+		if( success == 0 && result )
+		{
+			cout << result->pw_name << " ";
+		}
+		endpwent();
+	}
+	
+	// Print "type here" indicator:
+  	cout << "> ";
 }
 
 
 int main(int argc, const char * argv[])
 {
+	initialize();
+	
 	string		currLine;
 	
 	print_prompt();
