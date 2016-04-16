@@ -71,6 +71,9 @@ typedef function<dansh_statement(dansh_statement& stmt)> dansh_built_in_lambda;
 map<string,dansh_built_in_lambda>	gBuiltInCommands;
 
 
+int	launch_executable( const string& name, vector<dansh_statement> params );
+
+
 dansh_statement		dansh_statement::eval() const
 {
 	if( type == DANSH_STATEMENT_TYPE_FUNCTION )
@@ -97,8 +100,19 @@ dansh_statement		dansh_statement::eval() const
 		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(evaluated.name);
 		if( foundCommand == gBuiltInCommands.end() )
 		{
-			cerr << "Unknown command \"" << evaluated.name << "\"." << endl;
-			return dansh_statement();
+			int	status = launch_executable( evaluated.name, evaluated.params );
+			if( status == 0 )
+			{
+				dansh_statement		commandResult;
+				commandResult.type = DANSH_STATEMENT_TYPE_NUMBER;
+				commandResult.name = to_string( status );
+				return commandResult;
+			}
+			else
+			{
+				cerr << "Unknown command \"" << evaluated.name << "\"." << endl;
+				return dansh_statement();
+			}
 		}
 		return foundCommand->second( evaluated );
 	}
@@ -156,6 +170,46 @@ string	user_home_dir()
 	}
 	
 	return resultPath;
+}
+
+
+int	launch_executable( const string& name, vector<dansh_statement> params )
+{
+	int		status = 0;
+	
+	pid_t	childPID = fork();
+	if( childPID == 0 )	// Child process?
+	{
+		vector<char*>	args;
+		if( (name.length() != 0) )
+			args.push_back( strdup(name.c_str()) );
+		for( const dansh_statement& currParam : params )
+		{
+			args.push_back( strdup(currParam.name.c_str()) );
+		}
+		args.push_back(nullptr);
+		
+		if( execvp(args[0], args.data()) == -1 )	// Replace ourselves with the executable to launch:
+		{
+			perror("dansh");
+		}
+		exit(EXIT_FAILURE);	// Give back control to the shell that launched us, don't run a 2nd copy of that shell.
+	}
+	else if( childPID < 0 )	// Error forking?
+	{
+		perror( "dansh" );
+		return 1;
+	}
+	else	// Parent process?
+	{
+		do // Wait for the child process to quit:
+		{
+			waitpid( childPID, &status, WUNTRACED );
+		}
+		while( !WIFEXITED(status) && !WIFSIGNALED(status) );
+	}
+
+	return status;
 }
 
 
