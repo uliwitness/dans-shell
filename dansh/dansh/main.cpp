@@ -227,6 +227,24 @@ string	user_home_dir()
 }
 
 
+string	parent_dir()
+{
+	string	outDir;
+	char*	currentWorkingDirectory = getcwd( NULL, 0 );
+	if( currentWorkingDirectory )
+	{
+		char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
+		if( lastPathComponent && lastPathComponent != currentWorkingDirectory )	// We found a '/' and the whole path is not "/"?
+			*lastPathComponent = '\0';
+		if( lastPathComponent == currentWorkingDirectory )
+			currentWorkingDirectory[1] = '\0';	// Truncate, but leave the "/" there.
+		outDir = currentWorkingDirectory;
+		free( currentWorkingDirectory );
+	}
+	return outDir;
+}
+
+
 dansh_statement	launch_executable( const string& name, vector<dansh_statement> params )
 {
 	if( name.length() == 0 && params.size() == 0 )
@@ -349,17 +367,7 @@ void	initialize()
 	{
 		dansh_statement		currentDir;
 		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-		char*	currentWorkingDirectory = getcwd( NULL, 0 );
-		if( currentWorkingDirectory )
-		{
-			char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
-			if( lastPathComponent && lastPathComponent != currentWorkingDirectory )	// We found a '/' and the whole path is not "/"?
-				*lastPathComponent = '\0';
-			if( lastPathComponent == currentWorkingDirectory )
-				currentWorkingDirectory[1] = '\0';	// Truncate, but leave the "/" there.
-			currentDir.name = currentWorkingDirectory;
-			free( currentWorkingDirectory );
-		}
+		currentDir.name = parent_dir();
 		return currentDir;
 	};
 	
@@ -371,6 +379,15 @@ void	initialize()
 			chdir( params.params[0].name.c_str() );
 		return dansh_statement();
 	};
+	gBuiltInCommands["cd.."] = []( dansh_statement params )
+	{
+		if( params.params.size() > 0 )
+			cerr << "Too many parameters to 'cd' command." << endl;
+		else
+			chdir( parent_dir().c_str() );
+		return dansh_statement();
+	};
+	
 	
 	gBuiltInCommands["~"] = []( dansh_statement params )
 	{
@@ -814,7 +831,7 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		while( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_DOT )
 		{
 			currToken++;
-			if( currToken == tokens.end() || currToken->type != DANSH_TOKEN_TYPE_IDENTIFIER )
+			if( currToken == tokens.end() || (currToken->type != DANSH_TOKEN_TYPE_IDENTIFIER && currToken->type != DANSH_TOKEN_TYPE_DOT) )
 			{
 				cerr << "Expected identifier after '.' operator." << endl;
 				return dansh_statement();
