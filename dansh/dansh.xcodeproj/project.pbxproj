@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		5566AAEE1CC1832000F36A72 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5566AAED1CC1832000F36A72 /* main.cpp */; };
+		5566AAF61CC26DEF00F36A72 /* dansh_statement.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5566AAF41CC26DEF00F36A72 /* dansh_statement.cpp */; };
+		5566AAF91CC2708500F36A72 /* dansh_token.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5566AAF71CC2708500F36A72 /* dansh_token.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +27,10 @@
 /* Begin PBXFileReference section */
 		5566AAEA1CC1832000F36A72 /* dansh */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dansh; sourceTree = BUILT_PRODUCTS_DIR; };
 		5566AAED1CC1832000F36A72 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		5566AAF41CC26DEF00F36A72 /* dansh_statement.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_statement.cpp; sourceTree = "<group>"; };
+		5566AAF51CC26DEF00F36A72 /* dansh_statement.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_statement.hpp; sourceTree = "<group>"; };
+		5566AAF71CC2708500F36A72 /* dansh_token.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_token.cpp; sourceTree = "<group>"; };
+		5566AAF81CC2708500F36A72 /* dansh_token.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_token.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +64,10 @@
 			isa = PBXGroup;
 			children = (
 				5566AAED1CC1832000F36A72 /* main.cpp */,
+				5566AAF81CC2708500F36A72 /* dansh_token.hpp */,
+				5566AAF71CC2708500F36A72 /* dansh_token.cpp */,
+				5566AAF51CC26DEF00F36A72 /* dansh_statement.hpp */,
+				5566AAF41CC26DEF00F36A72 /* dansh_statement.cpp */,
 			);
 			path = dansh;
 			sourceTree = "<group>";
@@ -118,6 +128,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5566AAF61CC26DEF00F36A72 /* dansh_statement.cpp in Sources */,
+				5566AAF91CC2708500F36A72 /* dansh_token.cpp in Sources */,
 				5566AAEE1CC1832000F36A72 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
