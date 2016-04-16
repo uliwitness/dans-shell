@@ -14,6 +14,13 @@
 #include <vector>
 #include <map>
 #include <functional>
+#include <memory>
+
+
+class dansh_statement;
+
+
+typedef std::shared_ptr<dansh_statement> dansh_statement_ptr;
 
 
 typedef enum
@@ -25,27 +32,26 @@ typedef enum
 } dansh_statement_type;
 
 
-class dansh_statement
+class dansh_statement : public std::enable_shared_from_this<dansh_statement>
 {
 public:
-	dansh_statement() : type(DANSH_STATEMENT_INVALID) {}
+    dansh_statement() : type(DANSH_STATEMENT_INVALID) {}
 	
-	dansh_statement		eval() const;
+	dansh_statement_ptr		eval();
 	
 	void	print( std::ostream& outStream ) const;
 	
-	std::string						name;	// If name length is 0, the first parameter's value is used as the name.
-	std::vector<dansh_statement>	params;
-	dansh_statement_type			type;
+	std::string                         name;	// If name length is 0, the first parameter's value is used as the name.
+	std::vector<dansh_statement_ptr>	params;
+	dansh_statement_type                type;
 };
 
 
-typedef std::function<dansh_statement(dansh_statement& stmt)> dansh_built_in_lambda;
+typedef std::function<dansh_statement_ptr(dansh_statement_ptr stmt)> dansh_built_in_lambda;
 
 extern std::map<std::string,dansh_built_in_lambda>	gBuiltInCommands;
 
-
 extern std::string	path_for_command( const std::string & inCommandName );
-dansh_statement		launch_executable( const std::string& name, std::vector<dansh_statement> params );
+dansh_statement_ptr	launch_executable( const std::string& name, std::vector<dansh_statement_ptr> params );
 
 #endif /* dansh_statement_hpp */

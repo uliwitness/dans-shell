@@ -37,10 +37,10 @@ string	user_home_dir()
 }
 
 
-dansh_built_in_lambda	dansh_command_home_dir = []( dansh_statement params )
+dansh_built_in_lambda	dansh_command_home_dir = []( dansh_statement_ptr params )
 {
-    dansh_statement		currentDir;
-    currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-    currentDir.name = user_home_dir();
+    dansh_statement_ptr		currentDir( new dansh_statement );
+    currentDir->type = DANSH_STATEMENT_TYPE_STRING;
+    currentDir->name = user_home_dir();
     return currentDir;
 };

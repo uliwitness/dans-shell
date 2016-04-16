@@ -13,29 +13,29 @@
 using namespace std;
 
 
-dansh_built_in_lambda	dansh_command_env = []( dansh_statement params )
+dansh_built_in_lambda	dansh_command_env = []( dansh_statement_ptr params )
 {
-    dansh_statement		currentDir;
+    dansh_statement_ptr		currentDir( new dansh_statement );
     
-    currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-    string		varName = params.name.substr(4,string::npos);
+    currentDir->type = DANSH_STATEMENT_TYPE_STRING;
+    string		varName = params->name.substr(4,string::npos);
     const char*	envStr = getenv( varName.c_str() );
     if( envStr )
-        currentDir.name = envStr;
+        currentDir->name = envStr;
     return currentDir;
 };
 
 
-dansh_built_in_lambda	dansh_command_set_env = []( dansh_statement params )
+dansh_built_in_lambda	dansh_command_set_env = []( dansh_statement_ptr params )
 {
-    if( params.params.size() < 1 || (params.params[0].type != DANSH_STATEMENT_TYPE_STRING && params.params[0].type != DANSH_STATEMENT_TYPE_NUMBER) )
+    if( params->params.size() < 1 || (params->params[0]->type != DANSH_STATEMENT_TYPE_STRING && params->params[0]->type != DANSH_STATEMENT_TYPE_NUMBER) )
     {
         cerr << "Expected expression to the right of '=' symbol." << endl;
     }
     else
     {
-        string		varName = params.name.substr(5,string::npos);
-        setenv( varName.c_str(), params.params[0].name.c_str(), 1 );
+        string		varName = params->name.substr(5,string::npos);
+        setenv( varName.c_str(), params->params[0]->name.c_str(), 1 );
     }
-    return dansh_statement();
+    return dansh_statement_ptr();
 };

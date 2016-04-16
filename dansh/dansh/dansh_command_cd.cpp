@@ -14,11 +14,11 @@
 using namespace std;
 
 
-dansh_built_in_lambda	dansh_command_cd = []( dansh_statement params )
+dansh_built_in_lambda	dansh_command_cd = []( dansh_statement_ptr params )
 {
-    if( params.params.size() < 1 )
+    if( params->params.size() < 1 )
         cerr << "Expected directory path as first parameter of 'cd' command." << endl;
     else
-        chdir( params.params[0].name.c_str() );
-    return dansh_statement();
+        chdir( params->params[0]->name.c_str() );
+    return dansh_statement_ptr();
 };

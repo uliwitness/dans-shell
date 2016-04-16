@@ -73,16 +73,16 @@ string	path_for_command( const string & inCommandName )
 }
 
 
-dansh_statement	launch_executable( const string& name, vector<dansh_statement> params )
+dansh_statement_ptr	launch_executable( const string& name, vector<dansh_statement_ptr> params )
 {
 	if( name.length() == 0 && params.size() == 0 )
-		return dansh_statement();
+		return dansh_statement_ptr();
 	
 	int pipeOutputInputFDs[2];
 	if( pipe(pipeOutputInputFDs) == -1 )
 	{
 		perror("dansh");
-		return dansh_statement();
+		return dansh_statement_ptr();
 	}
 	
 	int		status = 0;
@@ -92,9 +92,9 @@ dansh_statement	launch_executable( const string& name, vector<dansh_statement> p
 		vector<char*>	args;
 		if( (name.length() != 0) )
 			args.push_back( strdup(name.c_str()) );
-		for( const dansh_statement& currParam : params )
+		for( const dansh_statement_ptr currParam : params )
 		{
-			args.push_back( strdup(currParam.name.c_str()) );
+			args.push_back( strdup(currParam->name.c_str()) );
 		}
 		args.push_back(nullptr);
 		
@@ -115,15 +115,15 @@ dansh_statement	launch_executable( const string& name, vector<dansh_statement> p
 	else if( childPID < 0 )	// Error forking?
 	{
 		perror( "dansh" );
-		return dansh_statement();
+		return dansh_statement_ptr();
 	}
 	else	// Parent process?
 	{
 		close( pipeOutputInputFDs[1] );	// We don't need the entrance, only the child process.
 		
 		char				buffer[4096];
-		dansh_statement		actualOutput;
-		actualOutput.type = DANSH_STATEMENT_TYPE_STRING;
+		dansh_statement_ptr	actualOutput( new dansh_statement );
+		actualOutput->type = DANSH_STATEMENT_TYPE_STRING;
 		//actualOutput.name.append(1,'[');
 		while( true )
 		{
@@ -137,7 +137,7 @@ dansh_statement	launch_executable( const string& name, vector<dansh_statement> p
 				else
 				{
 					perror("dansh");
-					return dansh_statement();
+					return dansh_statement_ptr();
 				}
 			}
 			else if( count == 0 )
@@ -146,7 +146,7 @@ dansh_statement	launch_executable( const string& name, vector<dansh_statement> p
 			}
 			else
 			{
-				actualOutput.name.append( buffer, count );
+				actualOutput->name.append( buffer, count );
 			}
 		}
 		close( pipeOutputInputFDs[0] );
@@ -161,79 +161,79 @@ dansh_statement	launch_executable( const string& name, vector<dansh_statement> p
 		return actualOutput;
 	}
 
-	return dansh_statement();
+	return dansh_statement_ptr();
 }
 
 
-dansh_statement		dansh_statement::eval() const
+dansh_statement_ptr		dansh_statement::eval()
 {
 	if( type == DANSH_STATEMENT_TYPE_FUNCTION )
 	{
-		dansh_statement		evaluated;
+		dansh_statement_ptr	evaluated( new dansh_statement );
 		bool				firstParamIsName = (name.length() == 0);	// No name? Use first param as name!
-		evaluated.name = name;
-		evaluated.type = type;
+		evaluated->name = name;
+		evaluated->type = type;
 		bool				isFirst = true;
-		for( const dansh_statement& currParam : params )
+		for( const dansh_statement_ptr currParam : params )
 		{
 			if( isFirst )
 			{
 				isFirst = false;
 				if( firstParamIsName )
-					evaluated.name = currParam.eval().name;
+					evaluated->name = currParam->eval()->name;
 				else
-					evaluated.params.push_back( currParam.eval() );
+					evaluated->params.push_back( currParam->eval() );
 			}
 			else
-				evaluated.params.push_back( currParam.eval() );
+				evaluated->params.push_back( currParam->eval() );
 		}
 		
-		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(evaluated.name);
+		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(evaluated->name);
 		if( foundCommand == gBuiltInCommands.end() )
 		{
-			string::size_type pos = evaluated.name.find('.');
+			string::size_type pos = evaluated->name.find('.');
 			if( pos != string::npos )
 			{
-				string	fuzzyName = evaluated.name.substr(0,pos);
+				string	fuzzyName = evaluated->name.substr(0,pos);
 				fuzzyName.append(".*");
 				foundCommand = gBuiltInCommands.find(fuzzyName);
 			}
 		}
         if( foundCommand == gBuiltInCommands.end() )
         {
-            bool    startsWithSymbol = (evaluated.name.length() >= 2 && evaluated.name[0] == '=' && !isalpha(evaluated.name[1]))
-                                        || (evaluated.name.length() >= 1 && evaluated.name[0] != '=' && !isalpha(evaluated.name[0]));
+            bool    startsWithSymbol = (evaluated->name.length() >= 2 && evaluated->name[0] == '=' && !isalpha(evaluated->name[1]))
+                                        || (evaluated->name.length() >= 1 && evaluated->name[0] != '=' && !isalpha(evaluated->name[0]));
             if( startsWithSymbol )
             {
-                string	fuzzyName = evaluated.name.substr(0,(evaluated.name[0] == '=') ? 2 : 1);
+                string	fuzzyName = evaluated->name.substr(0,(evaluated->name[0] == '=') ? 2 : 1);
                 fuzzyName.append("*");
                 foundCommand = gBuiltInCommands.find(fuzzyName);
             }
         }
 		if( foundCommand == gBuiltInCommands.end() )
 		{
-			string	commandPath = path_for_command( evaluated.name );
+			string	commandPath = path_for_command( evaluated->name );
 			
-			dansh_statement	commandOutput = launch_executable( commandPath, evaluated.params );
-			if( commandOutput.type == DANSH_STATEMENT_TYPE_STRING )
+			dansh_statement_ptr	commandOutput = launch_executable( commandPath, evaluated->params );
+			if( commandOutput->type == DANSH_STATEMENT_TYPE_STRING )
 			{
 				return commandOutput;
 			}
-            else if( evaluated.name.find('=') == 0 )    // Starts with = sign? Assignment to something nonsensical.
+            else if( evaluated->name.find('=') == 0 )    // Starts with = sign? Assignment to something nonsensical.
             {
-                cerr << "Don't know how to assign to \"" << evaluated.name << "\"." << endl;
-                return dansh_statement();
+                cerr << "Don't know how to assign to \"" << evaluated->name << "\"." << endl;
+                return dansh_statement_ptr();
             }
 			else
 			{
-				cerr << "Unknown command \"" << evaluated.name << "\"." << endl;
-				return dansh_statement();
+				cerr << "Unknown command \"" << evaluated->name << "\"." << endl;
+				return dansh_statement_ptr();
 			}
 		}
 		return foundCommand->second( evaluated );
 	}
 	else
-		return *this;
+		return shared_from_this();
 }
 
 
@@ -243,13 +243,13 @@ void	dansh_statement::print( ostream& outStream ) const
 	{
 		outStream << name << "( ";
 		bool	isFirst = true;
-		for( const dansh_statement& currParam : params )
+		for( const dansh_statement_ptr currParam : params )
 		{
 			if( isFirst )
 				isFirst = false;
 			else
 				outStream << ", ";
-			currParam.print( outStream );
+			currParam->print( outStream );
 		}
 		outStream << " )";
 	}

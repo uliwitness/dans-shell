@@ -10,14 +10,14 @@
 #include <unistd.h>
 
 
-dansh_built_in_lambda	dansh_command_pwd = []( dansh_statement params )
+dansh_built_in_lambda	dansh_command_pwd = []( dansh_statement_ptr params )
 {
-    dansh_statement		currentDir;
-    currentDir.type = DANSH_STATEMENT_TYPE_STRING;
+    dansh_statement_ptr	currentDir( new dansh_statement );
+    currentDir->type = DANSH_STATEMENT_TYPE_STRING;
     char*	currentWorkingDirectory = getcwd( NULL, 0 );
     if( currentWorkingDirectory )
     {
-        currentDir.name = currentWorkingDirectory;
+        currentDir->name = currentWorkingDirectory;
         free( currentWorkingDirectory );
     }
     return currentDir;

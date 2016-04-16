@@ -15,11 +15,11 @@
 using namespace std;
 
 
-dansh_built_in_lambda	dansh_command_cd_parent_dir = []( dansh_statement params )
+dansh_built_in_lambda	dansh_command_cd_parent_dir = []( dansh_statement_ptr params )
 {
-    if( params.params.size() > 0 )
+    if( params->params.size() > 0 )
         cerr << "Too many parameters to 'cd' command." << endl;
     else
         chdir( parent_dir().c_str() );
-    return dansh_statement();
+    return dansh_statement_ptr();
 };

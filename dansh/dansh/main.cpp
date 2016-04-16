@@ -35,7 +35,7 @@ bool		gKeepRunning = true;
 
 
 
-dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
+dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
 
 
 void	initialize()
@@ -44,10 +44,10 @@ void	initialize()
 	if( userHomeDir.length() != 0 )
 		chdir( userHomeDir.c_str() );
 	
-	gBuiltInCommands["exit"] = []( dansh_statement params )
+	gBuiltInCommands["exit"] = []( dansh_statement_ptr params )
 	{
 		gKeepRunning = false;
-		return dansh_statement();
+		return dansh_statement_ptr();
 	};
 	
     gBuiltInCommands["pwd"] = dansh_command_pwd;
@@ -60,11 +60,11 @@ void	initialize()
 	
 	gBuiltInCommands["~"] = dansh_command_home_dir;
 	
-	gBuiltInCommands["/"] = []( dansh_statement params )
+	gBuiltInCommands["/"] = []( dansh_statement_ptr params )
 	{
-		dansh_statement		currentDir;
-		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-		currentDir.name = "/";
+		dansh_statement_ptr	currentDir( new dansh_statement );
+		currentDir->type = DANSH_STATEMENT_TYPE_STRING;
+		currentDir->name = "/";
 		return currentDir;
 	};
 	
@@ -83,24 +83,24 @@ void	initialize()
 }
 
 
-dansh_statement	parse_one_value( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional = false )
+dansh_statement_ptr	parse_one_value( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional = false )
 {
 	if( currToken == tokens.end() )
-		return dansh_statement();
+		return dansh_statement_ptr();
 	
-	dansh_statement		currStatement;
+	dansh_statement_ptr		currStatement( new dansh_statement );
 	if( currToken->type == DANSH_TOKEN_TYPE_STRING )
 	{
-		currStatement.name = currToken->text;
-		currStatement.type = DANSH_STATEMENT_TYPE_STRING;
+		currStatement->name = currToken->text;
+		currStatement->type = DANSH_STATEMENT_TYPE_STRING;
 		currToken++;
 		
 		return currStatement;
 	}
 	else if( currToken->type == DANSH_TOKEN_TYPE_NUMBER )
 	{
-		currStatement.name = currToken->text;
-		currStatement.type = DANSH_STATEMENT_TYPE_NUMBER;
+		currStatement->name = currToken->text;
+		currStatement->type = DANSH_STATEMENT_TYPE_NUMBER;
 		currToken++;
 		
 		return currStatement;
@@ -110,7 +110,7 @@ dansh_statement	parse_one_value( const vector<dansh_token> & tokens, vector<dans
 }
 
 
-bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, dansh_statement &targetStatement, bool bracketsOptional )
+bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, dansh_statement_ptr targetStatement, bool bracketsOptional )
 {
 	if( currToken == tokens.end() )
 		return true;
@@ -143,10 +143,10 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 		if( currToken->type == DANSH_TOKEN_TYPE_LABEL )
 		{
 			hadLabel = true;
-			dansh_statement		label;
-			label.type = DANSH_STATEMENT_TYPE_STRING;
-			label.name = currToken->text;
-			targetStatement.params.push_back( label );
+			dansh_statement_ptr		label( new dansh_statement );
+			label->type = DANSH_STATEMENT_TYPE_STRING;
+			label->name = currToken->text;
+			targetStatement->params.push_back( label );
 			
 			currToken++;
 		}
@@ -154,8 +154,8 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 		if( currToken != tokens.end()
 			&& (!hadLabel || (currToken->type != DANSH_TOKEN_TYPE_LABEL && currToken->type != DANSH_TOKEN_TYPE_COMMA && currToken->type != DANSH_TOKEN_TYPE_CLOSING_BRACKET)) )
 		{
-			targetStatement.params.push_back( parse_one_value( tokens, currToken ) );
-			if( targetStatement.params.rbegin()->type == DANSH_STATEMENT_INVALID )
+			targetStatement->params.push_back( parse_one_value( tokens, currToken ) );
+			if( (*targetStatement->params.rbegin())->type == DANSH_STATEMENT_INVALID )
 				return false;
 		}
 		
@@ -186,23 +186,23 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 }
 
 
-dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional )
+dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional )
 {
 	if( currToken == tokens.end() )
-		return dansh_statement();
+		return dansh_statement_ptr();
 	
-	dansh_statement		currStatement;
+	dansh_statement_ptr	currStatement( new dansh_statement );
 		
 	if( currToken->type == DANSH_TOKEN_TYPE_IDENTIFIER || currToken->type == DANSH_TOKEN_TYPE_DOT )
 	{
 		// First, parse package name of the current command:
-		currStatement.name = currToken->text;
+		currStatement->name = currToken->text;
 		if( currToken->type == DANSH_TOKEN_TYPE_DOT )	// We support package names with a leading dot as a shorthand for current directory.
 		{
 			currToken++;
 			while( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_DOT )
 			{
-				currStatement.name.append( currToken->text );	// Append this "." to the "." already in the name.
+				currStatement->name.append( currToken->text );	// Append this "." to the "." already in the name.
 				currToken++;
 			}
 			if( currToken == tokens.end() || currToken->type != DANSH_TOKEN_TYPE_IDENTIFIER )	// No full identifier after this? Guess it's the special "." or ".." function.
@@ -210,7 +210,7 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 				currToken--;	// Backtrack, the currToken++ below will skip this token.
 			}
 			else
-				currStatement.name.append( currToken->text );	// Append identifier to the "." already here.
+				currStatement->name.append( currToken->text );	// Append identifier to the "." already here.
 		}
 		currToken++;
 		
@@ -220,28 +220,28 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 			if( currToken == tokens.end() || (currToken->type != DANSH_TOKEN_TYPE_IDENTIFIER && currToken->type != DANSH_TOKEN_TYPE_DOT) )
 			{
 				cerr << "Expected identifier after '.' operator." << endl;
-				return dansh_statement();
+				return dansh_statement_ptr();
 			}
-			currStatement.name.append(1,'.');
-			currStatement.name.append( currToken->text );
+			currStatement->name.append(1,'.');
+			currStatement->name.append( currToken->text );
 			currToken++;
 		}
 		
 		if( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_EQUAL )
 		{
 			currToken++;
-			currStatement.name.insert( 0, "=" );
-			currStatement.params.push_back( parse_one_value( tokens, currToken ) );
+			currStatement->name.insert( 0, "=" );
+			currStatement->params.push_back( parse_one_value( tokens, currToken ) );
 		}
 		// Now, parse parameter list, if any:
 		else if( !parse_parameter_list( tokens, currToken,  currStatement, bracketsOptional ) )
-			return dansh_statement();
-		currStatement.type = DANSH_STATEMENT_TYPE_FUNCTION;
+			return dansh_statement_ptr();
+		currStatement->type = DANSH_STATEMENT_TYPE_FUNCTION;
 	}
 	else if( currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
 	{
 		currToken++;
-		currStatement.params.push_back( parse_one_value( tokens, currToken ) );	// If we have no name, the first parameter is used as the name.
+		currStatement->params.push_back( parse_one_value( tokens, currToken ) );	// If we have no name, the first parameter is used as the name.
 		if( currToken == tokens.end() || currToken->type != DANSH_TOKEN_TYPE_CLOSING_BRACKET )
 		{
 			cerr << "Unexpected \"" << currToken->text.c_str() << "\" after function name expression. Expected \")\" here." << endl;
@@ -250,8 +250,8 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		
 		// Now, parse parameter list, if any:
 		if( !parse_parameter_list( tokens, currToken,  currStatement, bracketsOptional ) )
-			return dansh_statement();
-		currStatement.type = DANSH_STATEMENT_TYPE_FUNCTION;
+			return dansh_statement_ptr();
+		currStatement->type = DANSH_STATEMENT_TYPE_FUNCTION;
 	}
 	else
 	{
@@ -275,13 +275,16 @@ void	process_one_line( const string & currLine )
 	
 	vector<dansh_token>::const_iterator	currToken = tokens.begin();
 	
-	dansh_statement	currStatement = parse_one_statement( tokens, currToken, true );
-//	currStatement.print(cout);
-//	cout << endl;
-	
-	currStatement = currStatement.eval();
-	if( currStatement.type == DANSH_STATEMENT_TYPE_STRING || currStatement.name.length() != 0 )
-		cout << currStatement.name << endl;
+	dansh_statement_ptr	currStatement = parse_one_statement( tokens, currToken, true );
+    if( currStatement )
+    {
+//      currStatement.print(cout);
+//      cout << endl;
+        
+        currStatement = currStatement->eval();
+        if( currStatement && (currStatement->type == DANSH_STATEMENT_TYPE_STRING || currStatement->name.length() != 0) )
+            cout << currStatement->name << endl;
+    }
 }
 
 

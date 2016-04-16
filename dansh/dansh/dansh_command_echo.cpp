@@ -13,12 +13,12 @@
 using namespace std;
 
 
-dansh_built_in_lambda	dansh_command_echo = []( dansh_statement params )
+dansh_built_in_lambda	dansh_command_echo = []( dansh_statement_ptr params )
 {
-    for( const dansh_statement& currParam : params.params )
+    for( const dansh_statement_ptr currParam : params->params )
     {
-        cout << currParam.name;
+        cout << currParam->name;
     }
     cout << endl;
-    return dansh_statement();
+    return dansh_statement_ptr();
 };
