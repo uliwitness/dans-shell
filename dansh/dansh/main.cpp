@@ -719,5 +719,5 @@ int main(int argc, const char * argv[])
 			currLine.append( 1, currCh );
 	}
 	
-    return 0;
+    return EXIT_SUCCESS;
 }
