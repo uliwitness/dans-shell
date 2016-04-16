@@ -71,7 +71,7 @@ typedef function<dansh_statement(dansh_statement& stmt)> dansh_built_in_lambda;
 map<string,dansh_built_in_lambda>	gBuiltInCommands;
 
 
-int	launch_executable( const string& name, vector<dansh_statement> params );
+dansh_statement	launch_executable( const string& name, vector<dansh_statement> params );
 
 
 dansh_statement		dansh_statement::eval() const
@@ -100,13 +100,10 @@ dansh_statement		dansh_statement::eval() const
 		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(evaluated.name);
 		if( foundCommand == gBuiltInCommands.end() )
 		{
-			int	status = launch_executable( evaluated.name, evaluated.params );
-			if( status == 0 )
+			dansh_statement	commandOutput = launch_executable( evaluated.name, evaluated.params );
+			if( commandOutput.type == DANSH_STATEMENT_TYPE_STRING )
 			{
-				dansh_statement		commandResult;
-				commandResult.type = DANSH_STATEMENT_TYPE_NUMBER;
-				commandResult.name = to_string( status );
-				return commandResult;
+				return commandOutput;
 			}
 			else
 			{
@@ -173,10 +170,16 @@ string	user_home_dir()
 }
 
 
-int	launch_executable( const string& name, vector<dansh_statement> params )
+dansh_statement	launch_executable( const string& name, vector<dansh_statement> params )
 {
-	int		status = 0;
+	int pipeOutputInputFDs[2];
+	if( pipe(pipeOutputInputFDs) == -1 )
+	{
+		perror("dansh");
+		return dansh_statement();
+	}
 	
+	int		status = 0;
 	pid_t	childPID = fork();
 	if( childPID == 0 )	// Child process?
 	{
@@ -189,6 +192,14 @@ int	launch_executable( const string& name, vector<dansh_statement> params )
 		}
 		args.push_back(nullptr);
 		
+		// Replace our stdout with the pipe's input:
+		while( (dup2(pipeOutputInputFDs[1], STDOUT_FILENO) == -1) && (errno == EINTR) )
+		{
+			// We repeat this until we're no longer interrupted by some signal.
+		}
+		close( pipeOutputInputFDs[1] );	// Close original, we just made a copy.
+		close( pipeOutputInputFDs[0] );
+		
 		if( execvp(args[0], args.data()) == -1 )	// Replace ourselves with the executable to launch:
 		{
 			perror("dansh");
@@ -198,18 +209,53 @@ int	launch_executable( const string& name, vector<dansh_statement> params )
 	else if( childPID < 0 )	// Error forking?
 	{
 		perror( "dansh" );
-		return 1;
+		return dansh_statement();
 	}
 	else	// Parent process?
 	{
+		close( pipeOutputInputFDs[1] );	// We don't need the entrance, only the child process.
+		
+		char				buffer[4096];
+		dansh_statement		actualOutput;
+		actualOutput.type = DANSH_STATEMENT_TYPE_STRING;
+		//actualOutput.name.append(1,'[');
+		while( true )
+		{
+			ssize_t count = read( pipeOutputInputFDs[0], buffer, sizeof(buffer) );
+			if( count == -1 )
+			{
+				if (errno == EINTR)
+				{
+					continue;
+				}
+				else
+				{
+					perror("dansh");
+					return dansh_statement();
+				}
+			}
+			else if( count == 0 )
+			{
+				break;
+			}
+			else
+			{
+				actualOutput.name.append( buffer, count );
+			}
+		}
+		close( pipeOutputInputFDs[0] );
+		//actualOutput.name.append(1,']');
+
 		do // Wait for the child process to quit:
 		{
 			waitpid( childPID, &status, WUNTRACED );
 		}
 		while( !WIFEXITED(status) && !WIFSIGNALED(status) );
+		
+		return actualOutput;
 	}
 
-	return status;
+	return dansh_statement();
 }
 
 
