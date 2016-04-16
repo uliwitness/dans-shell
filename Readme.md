@@ -65,6 +65,10 @@ Change the current working directory to the given path, specified as a string.
 
 Returns the full path of the executable that Dan's Shell will run if you invoke the given command. This will for example look up the search paths in the PATH environment variable and check if a command of which only the name has been specified exists there. Note that you must put the name of the desired command in quotes, otherwise the command will be executed and which() will try to find a tool named like the result of that command.
 
+	echo( "text" )
+
+Logs all its arguments to standard output, followed by a line break.
+
 	exit()
 
 Quit Dan's Shell.
