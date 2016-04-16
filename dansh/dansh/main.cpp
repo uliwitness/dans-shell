@@ -12,15 +12,19 @@
 #include <vector>
 #include <cassert>
 #include <map>
-#include <pwd.h>
 #include <unistd.h>
+#include <pwd.h>
 
 #include "dansh_statement.hpp"
 #include "dansh_token.hpp"
 #include "dansh_command_pwd.hpp"
 #include "dansh_command_cd.hpp"
+#include "dansh_command_home_dir.hpp"
 #include "dansh_command_parent_dir.hpp"
 #include "dansh_command_cd_parent_dir.hpp"
+#include "dansh_command_which.hpp"
+#include "dansh_command_env.hpp"
+#include "dansh_command_echo.hpp"
 
 
 using namespace std;
@@ -31,28 +35,6 @@ bool		gKeepRunning = true;
 
 
 dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
-
-
-string	user_home_dir()
-{
-	string	resultPath;
-	long	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if( bufsize != -1 )
-    {
-		uid_t			uid = geteuid();
-		struct passwd	pw = {};
-		struct passwd*	result = nullptr;
-		char			buffer[bufsize];
-		int				success = getpwuid_r( uid, &pw, buffer, bufsize, &result );
-		if( success == 0 && result )
-		{
-			resultPath = result->pw_dir;
-		}
-		endpwent();
-	}
-	
-	return resultPath;
-}
 
 
 void	initialize()
@@ -75,13 +57,7 @@ void	initialize()
 	gBuiltInCommands["cd.."] = dansh_command_cd_parent_dir;
 	
 	
-	gBuiltInCommands["~"] = []( dansh_statement params )
-	{
-		dansh_statement		currentDir;
-		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-		currentDir.name = user_home_dir();
-		return currentDir;
-	};
+	gBuiltInCommands["~"] = dansh_command_home_dir;
 	
 	gBuiltInCommands["/"] = []( dansh_statement params )
 	{
@@ -91,55 +67,13 @@ void	initialize()
 		return currentDir;
 	};
 	
-	gBuiltInCommands["which"] = []( dansh_statement params )
-	{
-		dansh_statement		currentDir;
+	gBuiltInCommands["which"] = dansh_command_which;
 
-		if( params.params.size() < 1 )
-			cerr << "Expected directory path as first parameter of 'cd' command." << endl;
-		else
-		{
-			currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-			currentDir.name = path_for_command( params.params[0].name );
-		}
-		return currentDir;
-	};
-
-	gBuiltInCommands["env.*"] = []( dansh_statement params )
-	{
-		dansh_statement		currentDir;
-
-		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-		string		varName = params.name.substr(4,string::npos);
-		const char*	envStr = getenv( varName.c_str() );
-		if( envStr )
-			currentDir.name = envStr;
-		return currentDir;
-	};
+	gBuiltInCommands["env.*"] = dansh_command_env;
 	
-	gBuiltInCommands["=env.*"] = []( dansh_statement params )
-	{
-		if( params.params.size() < 1 || (params.params[0].type != DANSH_STATEMENT_TYPE_STRING && params.params[0].type != DANSH_STATEMENT_TYPE_NUMBER) )
-		{
-			cerr << "Expected expression to the right of '=' symbol." << endl;
-		}
-		else
-		{
-			string		varName = params.name.substr(5,string::npos);
-			setenv( varName.c_str(), params.params[0].name.c_str(), 1 );
-		}
-		return dansh_statement();
-	};
+	gBuiltInCommands["=env.*"] = dansh_command_set_env;
 	
-	gBuiltInCommands["echo"] = []( dansh_statement params )
-	{
-		for( const dansh_statement& currParam : params.params )
-		{
-			cout << currParam.name;
-		}
-		cout << endl;
-		return dansh_statement();
-	};
+	gBuiltInCommands["echo"] = dansh_command_echo;
 }
 
 

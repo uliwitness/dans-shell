@@ -14,6 +14,10 @@
 		55F0AA301CC28464000AD43C /* dansh_command_parent_dir.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA2E1CC28464000AD43C /* dansh_command_parent_dir.cpp */; };
 		55F0AA331CC28584000AD43C /* dansh_command_cd.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA311CC28584000AD43C /* dansh_command_cd.cpp */; };
 		55F0AA361CC28670000AD43C /* dansh_command_cd_parent_dir.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA341CC28670000AD43C /* dansh_command_cd_parent_dir.cpp */; };
+		55F0AA3F1CC28AE0000AD43C /* dansh_command_echo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA371CC28AE0000AD43C /* dansh_command_echo.cpp */; };
+		55F0AA401CC28AE0000AD43C /* dansh_command_env.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA391CC28AE0000AD43C /* dansh_command_env.cpp */; };
+		55F0AA411CC28AE0000AD43C /* dansh_command_home_dir.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA3B1CC28AE0000AD43C /* dansh_command_home_dir.cpp */; };
+		55F0AA421CC28AE0000AD43C /* dansh_command_which.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA3D1CC28AE0000AD43C /* dansh_command_which.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,6 +47,14 @@
 		55F0AA321CC28584000AD43C /* dansh_command_cd.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_cd.hpp; sourceTree = "<group>"; };
 		55F0AA341CC28670000AD43C /* dansh_command_cd_parent_dir.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_command_cd_parent_dir.cpp; sourceTree = "<group>"; };
 		55F0AA351CC28670000AD43C /* dansh_command_cd_parent_dir.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_cd_parent_dir.hpp; sourceTree = "<group>"; };
+		55F0AA371CC28AE0000AD43C /* dansh_command_echo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_command_echo.cpp; sourceTree = "<group>"; };
+		55F0AA381CC28AE0000AD43C /* dansh_command_echo.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_echo.hpp; sourceTree = "<group>"; };
+		55F0AA391CC28AE0000AD43C /* dansh_command_env.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_command_env.cpp; sourceTree = "<group>"; };
+		55F0AA3A1CC28AE0000AD43C /* dansh_command_env.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_env.hpp; sourceTree = "<group>"; };
+		55F0AA3B1CC28AE0000AD43C /* dansh_command_home_dir.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_command_home_dir.cpp; sourceTree = "<group>"; };
+		55F0AA3C1CC28AE0000AD43C /* dansh_command_home_dir.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_home_dir.hpp; sourceTree = "<group>"; };
+		55F0AA3D1CC28AE0000AD43C /* dansh_command_which.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_command_which.cpp; sourceTree = "<group>"; };
+		55F0AA3E1CC28AE0000AD43C /* dansh_command_which.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_which.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +100,14 @@
 				55F0AA311CC28584000AD43C /* dansh_command_cd.cpp */,
 				55F0AA351CC28670000AD43C /* dansh_command_cd_parent_dir.hpp */,
 				55F0AA341CC28670000AD43C /* dansh_command_cd_parent_dir.cpp */,
+				55F0AA381CC28AE0000AD43C /* dansh_command_echo.hpp */,
+				55F0AA371CC28AE0000AD43C /* dansh_command_echo.cpp */,
+				55F0AA3A1CC28AE0000AD43C /* dansh_command_env.hpp */,
+				55F0AA391CC28AE0000AD43C /* dansh_command_env.cpp */,
+				55F0AA3C1CC28AE0000AD43C /* dansh_command_home_dir.hpp */,
+				55F0AA3B1CC28AE0000AD43C /* dansh_command_home_dir.cpp */,
+				55F0AA3E1CC28AE0000AD43C /* dansh_command_which.hpp */,
+				55F0AA3D1CC28AE0000AD43C /* dansh_command_which.cpp */,
 			);
 			path = dansh;
 			sourceTree = "<group>";
@@ -149,11 +169,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				55F0AA301CC28464000AD43C /* dansh_command_parent_dir.cpp in Sources */,
+				55F0AA3F1CC28AE0000AD43C /* dansh_command_echo.cpp in Sources */,
 				55F0AA331CC28584000AD43C /* dansh_command_cd.cpp in Sources */,
+				55F0AA421CC28AE0000AD43C /* dansh_command_which.cpp in Sources */,
+				55F0AA411CC28AE0000AD43C /* dansh_command_home_dir.cpp in Sources */,
 				55F0AA2D1CC2830D000AD43C /* dansh_command_pwd.cpp in Sources */,
 				5566AAF61CC26DEF00F36A72 /* dansh_statement.cpp in Sources */,
 				5566AAF91CC2708500F36A72 /* dansh_token.cpp in Sources */,
 				5566AAEE1CC1832000F36A72 /* main.cpp in Sources */,
+				55F0AA401CC28AE0000AD43C /* dansh_command_env.cpp in Sources */,
 				55F0AA361CC28670000AD43C /* dansh_command_cd_parent_dir.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

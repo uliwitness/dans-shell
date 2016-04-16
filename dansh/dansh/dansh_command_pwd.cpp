@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 
-dansh_built_in_lambda	pwdCommand = []( dansh_statement params )
+dansh_built_in_lambda	dansh_command_pwd = []( dansh_statement params )
 {
     dansh_statement		currentDir;
     currentDir.type = DANSH_STATEMENT_TYPE_STRING;
