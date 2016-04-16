@@ -8,7 +8,8 @@ To call a command, use the general syntax
 
 Where name can be a package name consisting of several identifiers separated by dots.
 If there are no parameters, you can leave away the brackets as well, or you can specify
-empty brackets, as you wish.
+empty brackets, as you wish. For the outermost statement on a line, you can even leave
+away the brackets, so it looks almost like Bash or other shell languages.
 
 	(functionReturningName())( param1, param2, param3 )
 

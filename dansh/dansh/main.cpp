@@ -200,7 +200,7 @@ bool		gKeepRunning = true;
 
 
 
-dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken );
+dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
 
 
 string	user_home_dir()
@@ -675,37 +675,56 @@ dansh_statement	parse_one_value( const vector<dansh_token> & tokens, vector<dans
 }
 
 
-bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, dansh_statement &targetStatement )
+bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, dansh_statement &targetStatement, bool bracketsOptional )
 {
-	if( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
+	if( currToken == tokens.end() )
+		return true;
+	
+	if( currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
+		currToken++;
+	else if( !bracketsOptional )
+		return true;
+
+	while( true )
 	{
-		while( true )
+		if( currToken == tokens.end() )
 		{
-			currToken++;
-			if( currToken == tokens.end() )
+			if( !bracketsOptional )
 			{
 				cerr << "Missing \")\" to close parameter list." << endl;
 				return false;
 			}
+			else
+				return true;
+		}
 
-			if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
+		if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
+		{
+			currToken++;
+			return true;
+		}
+		
+		targetStatement.params.push_back( parse_one_value( tokens, currToken ) );
+		
+		if( currToken == tokens.end() )
+		{
+			if( !bracketsOptional )
 			{
-				currToken++;
-				break;
-			}
-			
-			targetStatement.params.push_back( parse_one_value( tokens, currToken ) );
-			
-			if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
-			{
-				currToken++;
-				break;
-			}
-			if( currToken->type != DANSH_TOKEN_TYPE_COMMA )
-			{
-				cerr << "Expected \",\" to separate parameters, or \")\" to end parameter list. Found \"" << currToken->text.c_str() << "\"." << endl;
+				cerr << "Missing \")\" to close parameter list." << endl;
 				return false;
 			}
+			else
+				return true;
+		}
+		if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
+		{
+			currToken++;
+			break;
+		}
+		if( currToken->type != DANSH_TOKEN_TYPE_COMMA )
+		{
+			cerr << "Expected \",\" to separate parameters, or \")\" to end parameter list. Found \"" << currToken->text.c_str() << "\"." << endl;
+			return false;
 		}
 	}
 	
@@ -713,7 +732,7 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 }
 
 
-dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken )
+dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot )
 {
 	if( currToken == tokens.end() )
 		return dansh_statement();
@@ -755,7 +774,7 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		}
 		
 		// Now, parse parameter list, if any:
-		if( !parse_parameter_list( tokens, currToken,  currStatement ) )
+		if( !parse_parameter_list( tokens, currToken,  currStatement, isRoot ) )
 			return dansh_statement();
 	}
 	else if( currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
@@ -769,7 +788,7 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		currToken++;
 		
 		// Now, parse parameter list, if any:
-		if( !parse_parameter_list( tokens, currToken,  currStatement ) )
+		if( !parse_parameter_list( tokens, currToken,  currStatement, isRoot ) )
 			return dansh_statement();
 	}
 	else
@@ -794,7 +813,7 @@ void	process_one_line( const string & currLine )
 	
 	vector<dansh_token>::const_iterator	currToken = tokens.begin();
 	
-	dansh_statement	currStatement = parse_one_statement( tokens, currToken );
+	dansh_statement	currStatement = parse_one_statement( tokens, currToken, true );
 //	currStatement.print(cout);
 //	cout << endl;
 	
