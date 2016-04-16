@@ -208,6 +208,11 @@ dansh_statement		dansh_statement::eval() const
 			{
 				return commandOutput;
 			}
+            else if( evaluated.name.find('=') == 0 )    // Starts with = sign? Assignment to something nonsensical.
+            {
+                cerr << "Don't know how to assign to \"" << evaluated.name << "\"." << endl;
+                return dansh_statement();
+            }
 			else
 			{
 				cerr << "Unknown command \"" << evaluated.name << "\"." << endl;
