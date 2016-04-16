@@ -46,6 +46,7 @@ public:
 
 typedef enum
 {
+	DANSH_STATEMENT_INVALID,		// Error indicator.
 	DANSH_STATEMENT_TYPE_FUNCTION,
 	DANSH_STATEMENT_TYPE_STRING,
 	DANSH_STATEMENT_TYPE_NUMBER
@@ -55,7 +56,7 @@ typedef enum
 class dansh_statement
 {
 public:
-	dansh_statement() : type(DANSH_STATEMENT_TYPE_FUNCTION) {}
+	dansh_statement() : type(DANSH_STATEMENT_INVALID) {}
 	
 	dansh_statement		eval() const;
 	
@@ -227,6 +228,9 @@ string	user_home_dir()
 
 dansh_statement	launch_executable( const string& name, vector<dansh_statement> params )
 {
+	if( name.length() == 0 && params.size() == 0 )
+		return dansh_statement();
+	
 	int pipeOutputInputFDs[2];
 	if( pipe(pipeOutputInputFDs) == -1 )
 	{
@@ -800,6 +804,7 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		// Now, parse parameter list, if any:
 		if( !parse_parameter_list( tokens, currToken,  currStatement, isRoot ) )
 			return dansh_statement();
+		currStatement.type = DANSH_STATEMENT_TYPE_FUNCTION;
 	}
 	else if( currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
 	{
@@ -814,6 +819,7 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		// Now, parse parameter list, if any:
 		if( !parse_parameter_list( tokens, currToken,  currStatement, isRoot ) )
 			return dansh_statement();
+		currStatement.type = DANSH_STATEMENT_TYPE_FUNCTION;
 	}
 	else
 	{
