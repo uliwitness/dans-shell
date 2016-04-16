@@ -29,6 +29,7 @@ typedef enum
 	DANSH_TOKEN_TYPE_CLOSING_BRACKET,
 	DANSH_TOKEN_TYPE_COMMA,
 	DANSH_TOKEN_TYPE_DOT,
+	DANSH_TOKEN_TYPE_EQUAL,
 	DANSH_TOKEN_TYPE_STRING,
 	DANSH_TOKEN_TYPE_NUMBER,
 	DANSH_TOKEN_TYPE_LABEL
@@ -441,6 +442,20 @@ void	initialize()
 		return currentDir;
 	};
 	
+	gBuiltInCommands["=env.*"] = []( dansh_statement params )
+	{
+		if( params.params.size() < 1 || (params.params[0].type != DANSH_STATEMENT_TYPE_STRING && params.params[0].type != DANSH_STATEMENT_TYPE_NUMBER) )
+		{
+			cerr << "Expected expression to the right of '=' symbol." << endl;
+		}
+		else
+		{
+			string		varName = params.name.substr(5,string::npos);
+			setenv( varName.c_str(), params.params[0].name.c_str(), 1 );
+		}
+		return dansh_statement();
+	};
+	
 	gBuiltInCommands["echo"] = []( dansh_statement params )
 	{
 		for( const dansh_statement& currParam : params.params )
@@ -516,6 +531,10 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						finish_token( ".", DANSH_TOKEN_TYPE_DOT, outTokens );
 						break;
 					
+					case '=':
+						finish_token( "=", DANSH_TOKEN_TYPE_EQUAL, outTokens );
+						break;
+						
 					case '#':
 						return;	// We parse one line, comment goes to end of line. we're done.
 						break;
@@ -574,6 +593,13 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						currTokenString.erase();
 						currType = DANSH_TOKEN_TYPE_WHITESPACE;
 						finish_token( ".", DANSH_TOKEN_TYPE_DOT, outTokens );
+						break;
+
+					case '=':
+						finish_token( currTokenString, currType, outTokens );
+						currTokenString.erase();
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
+						finish_token( "=", DANSH_TOKEN_TYPE_EQUAL, outTokens );
 						break;
 
 					case '#':
@@ -692,6 +718,13 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						finish_token( ",", DANSH_TOKEN_TYPE_COMMA, outTokens );
 						break;
 
+					case '=':
+						finish_token( currTokenString, currType, outTokens );
+						currTokenString.erase();
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
+						finish_token( "=", DANSH_TOKEN_TYPE_EQUAL, outTokens );
+						break;
+
 					case '#':
 						finish_token( currTokenString, currType, outTokens );
 						return;	// We parse one line, comment goes to end of line. we're done.
@@ -709,9 +742,9 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 			case DANSH_TOKEN_TYPE_CLOSING_BRACKET:
 			case DANSH_TOKEN_TYPE_COMMA:
 			case DANSH_TOKEN_TYPE_DOT:
-				assert(false);	// Should never happen, brackets are single-character tokens that immediately return to whitespace.
+			case DANSH_TOKEN_TYPE_EQUAL:
+				assert(false);	// Should never happen, operators are single-character tokens that immediately return to whitespace.
 				break;
-			
 		}
 	}
 	
@@ -719,7 +752,7 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 }
 
 
-dansh_statement	parse_one_value( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken )
+dansh_statement	parse_one_value( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional = false )
 {
 	if( currToken == tokens.end() )
 		return dansh_statement();
@@ -742,7 +775,7 @@ dansh_statement	parse_one_value( const vector<dansh_token> & tokens, vector<dans
 		return currStatement;
 	}
 	else
-		return parse_one_statement( tokens, currToken );
+		return parse_one_statement( tokens, currToken, bracketsOptional );
 }
 
 
@@ -822,7 +855,7 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 }
 
 
-dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot )
+dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional )
 {
 	if( currToken == tokens.end() )
 		return dansh_statement();
@@ -863,8 +896,14 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 			currToken++;
 		}
 		
+		if( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_EQUAL )
+		{
+			currToken++;
+			currStatement.name.insert( 0, "=" );
+			currStatement.params.push_back( parse_one_value( tokens, currToken ) );
+		}
 		// Now, parse parameter list, if any:
-		if( !parse_parameter_list( tokens, currToken,  currStatement, isRoot ) )
+		else if( !parse_parameter_list( tokens, currToken,  currStatement, bracketsOptional ) )
 			return dansh_statement();
 		currStatement.type = DANSH_STATEMENT_TYPE_FUNCTION;
 	}
@@ -879,7 +918,7 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		currToken++;
 		
 		// Now, parse parameter list, if any:
-		if( !parse_parameter_list( tokens, currToken,  currStatement, isRoot ) )
+		if( !parse_parameter_list( tokens, currToken,  currStatement, bracketsOptional ) )
 			return dansh_statement();
 		currStatement.type = DANSH_STATEMENT_TYPE_FUNCTION;
 	}
