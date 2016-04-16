@@ -396,6 +396,16 @@ void	initialize()
 		}
 		return currentDir;
 	};
+	
+	gBuiltInCommands["echo"] = []( dansh_statement params )
+	{
+		for( const dansh_statement& currParam : params.params )
+		{
+			cout << currParam.name;
+		}
+		cout << endl;
+		return dansh_statement();
+	};
 }
 
 
