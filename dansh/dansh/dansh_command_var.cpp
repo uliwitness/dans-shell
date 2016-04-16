@@ -22,7 +22,7 @@ dansh_built_in_lambda	dansh_command_var = []( dansh_statement params )
     dansh_statement		currentDir;
     
     currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-    string		varName = params.name.substr(4,string::npos);
+    string		varName = (params.name[0] == '$') ? params.name.substr(1,string::npos) : params.name.substr(4,string::npos);
     currentDir.name = gVariables[varName];
     return currentDir;
 };
@@ -36,7 +36,7 @@ dansh_built_in_lambda	dansh_command_set_var = []( dansh_statement params )
     }
     else
     {
-        string		varName = params.name.substr(5,string::npos);
+        string		varName = (params.name[1] == '$') ? params.name.substr(2,string::npos) : params.name.substr(5,string::npos);
         gVariables[varName] = params.params[0].name;
     }
     return dansh_statement();

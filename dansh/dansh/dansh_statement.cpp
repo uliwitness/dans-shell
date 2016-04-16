@@ -199,6 +199,17 @@ dansh_statement		dansh_statement::eval() const
 				foundCommand = gBuiltInCommands.find(fuzzyName);
 			}
 		}
+        if( foundCommand == gBuiltInCommands.end() )
+        {
+            bool    startsWithSymbol = (evaluated.name.length() >= 2 && evaluated.name[0] == '=' && !isalpha(evaluated.name[1]))
+                                        || (evaluated.name.length() >= 1 && evaluated.name[0] != '=' && !isalpha(evaluated.name[0]));
+            if( startsWithSymbol )
+            {
+                string	fuzzyName = evaluated.name.substr(0,(evaluated.name[0] == '=') ? 2 : 1);
+                fuzzyName.append("*");
+                foundCommand = gBuiltInCommands.find(fuzzyName);
+            }
+        }
 		if( foundCommand == gBuiltInCommands.end() )
 		{
 			string	commandPath = path_for_command( evaluated.name );

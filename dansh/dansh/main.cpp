@@ -75,6 +75,9 @@ void	initialize()
     
     gBuiltInCommands["var.*"] = dansh_command_var;
     gBuiltInCommands["=var.*"] = dansh_command_set_var;
+    gBuiltInCommands["$*"] = dansh_command_var;
+    gBuiltInCommands["=$*"] = dansh_command_set_var;
+    
     
 	gBuiltInCommands["echo"] = dansh_command_echo;
 }
