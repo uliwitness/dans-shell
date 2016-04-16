@@ -17,6 +17,10 @@
 
 #include "dansh_statement.hpp"
 #include "dansh_token.hpp"
+#include "dansh_command_pwd.hpp"
+#include "dansh_command_cd.hpp"
+#include "dansh_command_parent_dir.hpp"
+#include "dansh_command_cd_parent_dir.hpp"
 
 
 using namespace std;
@@ -51,24 +55,6 @@ string	user_home_dir()
 }
 
 
-string	parent_dir()
-{
-	string	outDir;
-	char*	currentWorkingDirectory = getcwd( NULL, 0 );
-	if( currentWorkingDirectory )
-	{
-		char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
-		if( lastPathComponent && lastPathComponent != currentWorkingDirectory )	// We found a '/' and the whole path is not "/"?
-			*lastPathComponent = '\0';
-		if( lastPathComponent == currentWorkingDirectory )
-			currentWorkingDirectory[1] = '\0';	// Truncate, but leave the "/" there.
-		outDir = currentWorkingDirectory;
-		free( currentWorkingDirectory );
-	}
-	return outDir;
-}
-
-
 void	initialize()
 {
 	string	userHomeDir = user_home_dir();
@@ -81,44 +67,12 @@ void	initialize()
 		return dansh_statement();
 	};
 	
-	dansh_built_in_lambda	pwdCommand = []( dansh_statement params )
-	{
-		dansh_statement		currentDir;
-		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-		char*	currentWorkingDirectory = getcwd( NULL, 0 );
-		if( currentWorkingDirectory )
-		{
-			currentDir.name = currentWorkingDirectory;
-			free( currentWorkingDirectory );
-		}
-		return currentDir;
-	};
-	gBuiltInCommands["pwd"] = pwdCommand;
-	gBuiltInCommands["."] = pwdCommand;
-	gBuiltInCommands[".."] = []( dansh_statement params )
-	{
-		dansh_statement		currentDir;
-		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
-		currentDir.name = parent_dir();
-		return currentDir;
-	};
+    gBuiltInCommands["pwd"] = dansh_command_pwd;
+    gBuiltInCommands["."] = dansh_command_pwd;
+    gBuiltInCommands[".."] = dansh_command_parent_dir;
 	
-	gBuiltInCommands["cd"] = []( dansh_statement params )
-	{
-		if( params.params.size() < 1 )
-			cerr << "Expected directory path as first parameter of 'cd' command." << endl;
-		else
-			chdir( params.params[0].name.c_str() );
-		return dansh_statement();
-	};
-	gBuiltInCommands["cd.."] = []( dansh_statement params )
-	{
-		if( params.params.size() > 0 )
-			cerr << "Too many parameters to 'cd' command." << endl;
-		else
-			chdir( parent_dir().c_str() );
-		return dansh_statement();
-	};
+	gBuiltInCommands["cd"] = dansh_command_cd;
+	gBuiltInCommands["cd.."] = dansh_command_cd_parent_dir;
 	
 	
 	gBuiltInCommands["~"] = []( dansh_statement params )
