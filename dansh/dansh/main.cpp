@@ -15,6 +15,7 @@
 #include <vector>
 #include <cassert>
 #include <map>
+#include <sys/stat.h>
 
 
 using namespace std;
@@ -74,6 +75,58 @@ map<string,dansh_built_in_lambda>	gBuiltInCommands;
 dansh_statement	launch_executable( const string& name, vector<dansh_statement> params );
 
 
+// This is from Darwin's implementation of "which":
+bool	file_is_accessible( const string& inPath )
+{
+	struct stat		fileInfo = {};
+
+	return( access(inPath.c_str(), X_OK) == 0
+			&& stat(inPath.c_str(), &fileInfo) == 0
+			&& S_ISREG(fileInfo.st_mode)
+			&& (getuid() != 0 || (fileInfo.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) != 0) );
+}
+
+
+string	path_for_command( const string & inCommandName )
+{
+	string	finalPath;
+	if( inCommandName.find( "./" ) == 0 )	// Starts with "./"? User explicitly requested current directory.
+	{
+		char*	currentWorkingDirectory = getcwd( NULL, 0 );
+		if( currentWorkingDirectory )
+		{
+			finalPath = currentWorkingDirectory;
+			finalPath.append( inCommandName.substr(1) );
+			free(currentWorkingDirectory);
+		}
+	}
+	else if( inCommandName.find("/") == 0 )	// Starts with "/"? User explicitly requested this tool.
+	{
+		finalPath = inCommandName;
+	}
+	else
+	{
+		char*	thePath = strdup(getenv("PATH"));
+		char*	currPath = thePath;
+		char*	token = NULL;
+		while( (token = strsep( &currPath, ":" )) != nullptr )
+		{
+			finalPath = token;
+			finalPath.append( 1, '/' );
+			finalPath.append( inCommandName );
+			if( file_is_accessible( finalPath ) )
+				break;
+		}
+		free( thePath );
+		
+		if( token == nullptr )
+			finalPath.erase();
+	}
+	
+	return finalPath;
+}
+
+
 dansh_statement		dansh_statement::eval() const
 {
 	if( type == DANSH_STATEMENT_TYPE_FUNCTION )
@@ -100,7 +153,9 @@ dansh_statement		dansh_statement::eval() const
 		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(evaluated.name);
 		if( foundCommand == gBuiltInCommands.end() )
 		{
-			dansh_statement	commandOutput = launch_executable( evaluated.name, evaluated.params );
+			string	commandPath = path_for_command( evaluated.name );
+			
+			dansh_statement	commandOutput = launch_executable( commandPath, evaluated.params );
 			if( commandOutput.type == DANSH_STATEMENT_TYPE_STRING )
 			{
 				return commandOutput;
