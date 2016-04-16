@@ -849,45 +849,48 @@ void	process_one_line( const string & currLine )
 
 void	print_prompt()
 {
-	// Print current folder's name:
-	char*	currentWorkingDirectory = getcwd( NULL, 0 );
-	if( currentWorkingDirectory )
+	if( isatty(fileno(stdin)) )
 	{
-		if( strcmp(currentWorkingDirectory,"/") == 0 )
+		// Print current folder's name:
+		char*	currentWorkingDirectory = getcwd( NULL, 0 );
+		if( currentWorkingDirectory )
 		{
-			cout << "/ ";
+			if( strcmp(currentWorkingDirectory,"/") == 0 )
+			{
+				cout << "/ ";
+			}
+			else if( user_home_dir().compare(currentWorkingDirectory) == 0 )
+			{
+				cout << "~ ";
+			}
+			else
+			{
+				char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
+				if( lastPathComponent )
+					cout << (lastPathComponent +1) << " ";
+			}
+			free( currentWorkingDirectory );
 		}
-		else if( user_home_dir().compare(currentWorkingDirectory) == 0 )
+		
+		// Print current user's name:
+		long	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+		if( bufsize != -1 )
 		{
-			cout << "~ ";
+			uid_t			uid = geteuid();
+			struct passwd	pw = {};
+			struct passwd*	result = nullptr;
+			char			buffer[bufsize];
+			int				success = getpwuid_r( uid, &pw, buffer, bufsize, &result );
+			if( success == 0 && result )
+			{
+				cout << result->pw_name;
+			}
+			endpwent();
 		}
-		else
-		{
-			char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
-			if( lastPathComponent )
-				cout << (lastPathComponent +1) << " ";
-		}
-		free( currentWorkingDirectory );
+		
+		// Print "type here" indicator:
+		cout << "> ";
 	}
-	
-	// Print current user's name:
-	long	bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-	if( bufsize != -1 )
-    {
-		uid_t			uid = geteuid();
-		struct passwd	pw = {};
-		struct passwd*	result = nullptr;
-		char			buffer[bufsize];
-		int				success = getpwuid_r( uid, &pw, buffer, bufsize, &result );
-		if( success == 0 && result )
-		{
-			cout << result->pw_name;
-		}
-		endpwent();
-	}
-	
-	// Print "type here" indicator:
-  	cout << "> ";
 }
 
 
