@@ -155,6 +155,16 @@ dansh_statement		dansh_statement::eval() const
 		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(evaluated.name);
 		if( foundCommand == gBuiltInCommands.end() )
 		{
+			string::size_type pos = evaluated.name.find('.');
+			if( pos != string::npos )
+			{
+				string	fuzzyName = evaluated.name.substr(0,pos);
+				fuzzyName.append(".*");
+				foundCommand = gBuiltInCommands.find(fuzzyName);
+			}
+		}
+		if( foundCommand == gBuiltInCommands.end() )
+		{
 			string	commandPath = path_for_command( evaluated.name );
 			
 			dansh_statement	commandOutput = launch_executable( commandPath, evaluated.params );
@@ -416,6 +426,18 @@ void	initialize()
 			currentDir.type = DANSH_STATEMENT_TYPE_STRING;
 			currentDir.name = path_for_command( params.params[0].name );
 		}
+		return currentDir;
+	};
+
+	gBuiltInCommands["env.*"] = []( dansh_statement params )
+	{
+		dansh_statement		currentDir;
+
+		currentDir.type = DANSH_STATEMENT_TYPE_STRING;
+		string		varName = params.name.substr(4,string::npos);
+		const char*	envStr = getenv( varName.c_str() );
+		if( envStr )
+			currentDir.name = envStr;
 		return currentDir;
 	};
 	
