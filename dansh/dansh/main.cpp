@@ -60,7 +60,7 @@ public:
 	
 	void	print( ostream& outStream ) const;
 	
-	string					name;
+	string					name;	// If name length is 0, the first parameter's value is used as the name.
 	vector<dansh_statement>	params;
 	dansh_statement_type	type;
 };
@@ -76,17 +76,28 @@ dansh_statement		dansh_statement::eval() const
 	if( type == DANSH_STATEMENT_TYPE_FUNCTION )
 	{
 		dansh_statement		evaluated;
+		bool				firstParamIsName = (name.length() == 0);	// No name? Use first param as name!
 		evaluated.name = name;
 		evaluated.type = type;
+		bool				isFirst = true;
 		for( const dansh_statement& currParam : params )
 		{
-			evaluated.params.push_back( currParam.eval() );
+			if( isFirst )
+			{
+				isFirst = false;
+				if( firstParamIsName )
+					evaluated.name = currParam.eval().name;
+				else
+					evaluated.params.push_back( currParam.eval() );
+			}
+			else
+				evaluated.params.push_back( currParam.eval() );
 		}
 		
-		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(name);
+		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(evaluated.name);
 		if( foundCommand == gBuiltInCommands.end() )
 		{
-			cerr << "Unknown command \"" << name << "\"." << endl;
+			cerr << "Unknown command \"" << evaluated.name << "\"." << endl;
 			return dansh_statement();
 		}
 		return foundCommand->second( evaluated );
@@ -509,6 +520,44 @@ dansh_statement	parse_one_value( const vector<dansh_token> & tokens, vector<dans
 }
 
 
+bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, dansh_statement &targetStatement )
+{
+	if( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
+	{
+		while( true )
+		{
+			currToken++;
+			if( currToken == tokens.end() )
+			{
+				cerr << "Missing \")\" to close parameter list." << endl;
+				return false;
+			}
+
+			if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
+			{
+				currToken++;
+				break;
+			}
+			
+			targetStatement.params.push_back( parse_one_value( tokens, currToken ) );
+			
+			if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
+			{
+				currToken++;
+				break;
+			}
+			if( currToken->type != DANSH_TOKEN_TYPE_COMMA )
+			{
+				cerr << "Expected \",\" to separate parameters, or \")\" to end parameter list. Found \"" << currToken->text.c_str() << "\"." << endl;
+				return false;
+			}
+		}
+	}
+	
+	return true;
+}
+
+
 dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken )
 {
 	if( currToken == tokens.end() )
@@ -551,37 +600,22 @@ dansh_statement	parse_one_statement( const vector<dansh_token> & tokens, vector<
 		}
 		
 		// Now, parse parameter list, if any:
-		if( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
+		if( !parse_parameter_list( tokens, currToken,  currStatement ) )
+			return dansh_statement();
+	}
+	else if( currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
+	{
+		currToken++;
+		currStatement.params.push_back( parse_one_value( tokens, currToken ) );	// If we have no name, the first parameter is used as the name.
+		if( currToken == tokens.end() || currToken->type != DANSH_TOKEN_TYPE_CLOSING_BRACKET )
 		{
-			while( true )
-			{
-				currToken++;
-				if( currToken == tokens.end() )
-				{
-					cerr << "Missing \")\" to close parameter list." << endl;
-					return dansh_statement();
-				}
-
-				if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
-				{
-					currToken++;
-					break;
-				}
-				
-				currStatement.params.push_back( parse_one_value( tokens, currToken ) );
-				
-				if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
-				{
-					currToken++;
-					break;
-				}
-				if( currToken->type != DANSH_TOKEN_TYPE_COMMA )
-				{
-					cerr << "Expected \",\" to separate parameters, or \")\" to end parameter list. Found \"" << currToken->text.c_str() << "\"." << endl;
-					return dansh_statement();
-				}
-			}
+			cerr << "Unexpected \"" << currToken->text.c_str() << "\" after function name expression. Expected \")\" here." << endl;
 		}
+		currToken++;
+		
+		// Now, parse parameter list, if any:
+		if( !parse_parameter_list( tokens, currToken,  currStatement ) )
+			return dansh_statement();
 	}
 	else
 	{

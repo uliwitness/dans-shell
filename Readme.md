@@ -10,6 +10,11 @@ Where name can be a package name consisting of several identifiers separated by 
 If there are no parameters, you can leave away the brackets as well, or you can specify
 empty brackets, as you wish.
 
+	(functionReturningName())( param1, param2, param3 )
+
+If you want to build the name of a command using code (e.g. to generate the pathname for
+an executable), you replace the name in your function call with the expression in brackets.
+
 Currently, two kinds of values are supported:
 
 	"Quoted String"
