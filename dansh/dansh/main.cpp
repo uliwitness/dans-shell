@@ -30,7 +30,8 @@ typedef enum
 	DANSH_TOKEN_TYPE_COMMA,
 	DANSH_TOKEN_TYPE_DOT,
 	DANSH_TOKEN_TYPE_STRING,
-	DANSH_TOKEN_TYPE_NUMBER
+	DANSH_TOKEN_TYPE_NUMBER,
+	DANSH_TOKEN_TYPE_LABEL
 } dansh_token_type;
 
 
@@ -418,6 +419,9 @@ void	finish_token( const string & currTokenString, dansh_token_type currType, ve
 	if( currTokenString.length() == 0 && currType != DANSH_TOKEN_TYPE_STRING )
 		return;
 	
+	if( currType == DANSH_TOKEN_TYPE_IDENTIFIER && currTokenString.find("-") == 0 )
+		currType = DANSH_TOKEN_TYPE_LABEL;
+	
 	dansh_token		newToken;
 	newToken.type = currType;
 	newToken.text = currTokenString;
@@ -732,7 +736,25 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 			return true;
 		}
 		
-		targetStatement.params.push_back( parse_one_value( tokens, currToken ) );
+		bool	hadLabel = false;
+		if( currToken->type == DANSH_TOKEN_TYPE_LABEL )
+		{
+			hadLabel = true;
+			dansh_statement		label;
+			label.type = DANSH_STATEMENT_TYPE_STRING;
+			label.name = currToken->text;
+			targetStatement.params.push_back( label );
+			
+			currToken++;
+		}
+		
+		if( currToken != tokens.end()
+			&& (!hadLabel || (currToken->type != DANSH_TOKEN_TYPE_LABEL && currToken->type != DANSH_TOKEN_TYPE_COMMA && currToken->type != DANSH_TOKEN_TYPE_CLOSING_BRACKET)) )
+		{
+			targetStatement.params.push_back( parse_one_value( tokens, currToken ) );
+			if( targetStatement.params.rbegin()->type == DANSH_STATEMENT_INVALID )
+				return false;
+		}
 		
 		if( currToken == tokens.end() )
 		{
@@ -754,6 +776,7 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 			cerr << "Expected \",\" to separate parameters, or \")\" to end parameter list. Found \"" << currToken->text.c_str() << "\"." << endl;
 			return false;
 		}
+		currToken++;
 	}
 	
 	return true;

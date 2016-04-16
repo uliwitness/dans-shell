@@ -32,6 +32,18 @@ a carriage return (ASCII 13, classic MacOS line break). For a Windows line break
 Number. A number can consist only of numeric characters and may optionally contain
 a decimal point.
 
+	name( -label "paramOne", --label2, "param3" )
+
+While Dan's Shell requires commas between parameters, it has a special understanding of parameter labels. A label is an identifier that starts with a dash or two dashes, which is passed verbatim as if it was a string as a parameter to the called executable. Usually, command line tools use labels either to indicate what parameter is to follow (in the above case that "paramOne" is a label), or as switches whose presence indicates what the program is to do (like "--label2" above).
+
+	name( "-label", "paramOne", "--label2", "param3" )
+
+is 100% equivalent to the above labeled command, just that it's less arduous to type. Similarly, since you can leave out the brackets, you can end up at near-Bash-syntax:
+
+	name -label "paramOne", --label2, "param3"
+
+
+
 
 ##Built-in commands
 
