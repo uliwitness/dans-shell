@@ -382,6 +382,20 @@ void	initialize()
 		currentDir.name = "/";
 		return currentDir;
 	};
+	
+	gBuiltInCommands["which"] = []( dansh_statement params )
+	{
+		dansh_statement		currentDir;
+
+		if( params.params.size() < 1 )
+			cerr << "Expected directory path as first parameter of 'cd' command." << endl;
+		else
+		{
+			currentDir.type = DANSH_STATEMENT_TYPE_STRING;
+			currentDir.name = path_for_command( params.params[0].name );
+		}
+		return currentDir;
+	};
 }
 
 

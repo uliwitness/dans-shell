@@ -61,6 +61,10 @@ Is also a valid function, and returns the current user's home directory.
 
 Change the current working directory to the given path, specified as a string.
 
+	which( "pathOrCommandName" )
+
+Returns the full path of the executable that Dan's Shell will run if you invoke the given command. This will for example look up the search paths in the PATH environment variable and check if a command of which only the name has been specified exists there. Note that you must put the name of the desired command in quotes, otherwise the command will be executed and which() will try to find a tool named like the result of that command.
+
 	exit()
 
 Quit Dan's Shell.
