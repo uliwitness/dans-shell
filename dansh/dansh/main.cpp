@@ -25,6 +25,7 @@
 #include "dansh_command_which.hpp"
 #include "dansh_command_env.hpp"
 #include "dansh_command_echo.hpp"
+#include "dansh_command_var.hpp"
 
 
 using namespace std;
@@ -69,10 +70,12 @@ void	initialize()
 	
 	gBuiltInCommands["which"] = dansh_command_which;
 
-	gBuiltInCommands["env.*"] = dansh_command_env;
-	
-	gBuiltInCommands["=env.*"] = dansh_command_set_env;
-	
+    gBuiltInCommands["env.*"] = dansh_command_env;
+    gBuiltInCommands["=env.*"] = dansh_command_set_env;
+    
+    gBuiltInCommands["var.*"] = dansh_command_var;
+    gBuiltInCommands["=var.*"] = dansh_command_set_var;
+    
 	gBuiltInCommands["echo"] = dansh_command_echo;
 }
 

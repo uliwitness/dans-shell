@@ -18,6 +18,7 @@
 		55F0AA401CC28AE0000AD43C /* dansh_command_env.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA391CC28AE0000AD43C /* dansh_command_env.cpp */; };
 		55F0AA411CC28AE0000AD43C /* dansh_command_home_dir.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA3B1CC28AE0000AD43C /* dansh_command_home_dir.cpp */; };
 		55F0AA421CC28AE0000AD43C /* dansh_command_which.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA3D1CC28AE0000AD43C /* dansh_command_which.cpp */; };
+		55F0AA451CC28F49000AD43C /* dansh_command_var.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 55F0AA431CC28F49000AD43C /* dansh_command_var.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -55,6 +56,8 @@
 		55F0AA3C1CC28AE0000AD43C /* dansh_command_home_dir.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_home_dir.hpp; sourceTree = "<group>"; };
 		55F0AA3D1CC28AE0000AD43C /* dansh_command_which.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_command_which.cpp; sourceTree = "<group>"; };
 		55F0AA3E1CC28AE0000AD43C /* dansh_command_which.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_which.hpp; sourceTree = "<group>"; };
+		55F0AA431CC28F49000AD43C /* dansh_command_var.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = dansh_command_var.cpp; sourceTree = "<group>"; };
+		55F0AA441CC28F49000AD43C /* dansh_command_var.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dansh_command_var.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +111,8 @@
 				55F0AA3B1CC28AE0000AD43C /* dansh_command_home_dir.cpp */,
 				55F0AA3E1CC28AE0000AD43C /* dansh_command_which.hpp */,
 				55F0AA3D1CC28AE0000AD43C /* dansh_command_which.cpp */,
+				55F0AA441CC28F49000AD43C /* dansh_command_var.hpp */,
+				55F0AA431CC28F49000AD43C /* dansh_command_var.cpp */,
 			);
 			path = dansh;
 			sourceTree = "<group>";
@@ -178,6 +183,7 @@
 				5566AAF91CC2708500F36A72 /* dansh_token.cpp in Sources */,
 				5566AAEE1CC1832000F36A72 /* main.cpp in Sources */,
 				55F0AA401CC28AE0000AD43C /* dansh_command_env.cpp in Sources */,
+				55F0AA451CC28F49000AD43C /* dansh_command_var.cpp in Sources */,
 				55F0AA361CC28670000AD43C /* dansh_command_cd_parent_dir.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
