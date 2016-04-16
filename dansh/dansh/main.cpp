@@ -904,7 +904,10 @@ int main(int argc, const char * argv[])
 		char	currCh = 0;
 		currCh = getc(stdin);
 		if( currCh == EOF || currCh == '\0' )
+		{
+			process_one_line( currLine );
 			gKeepRunning = false;
+		}
 		else if( currCh == '\n' || currCh == '\r' )
 		{
 			process_one_line( currLine );
