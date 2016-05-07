@@ -215,7 +215,7 @@ dansh_statement_ptr		dansh_statement::eval()
 			string	commandPath = path_for_command( evaluated->name );
 			
 			dansh_statement_ptr	commandOutput = launch_executable( commandPath, evaluated->params );
-			if( commandOutput->type == DANSH_STATEMENT_TYPE_STRING )
+			if( commandOutput && commandOutput->type == DANSH_STATEMENT_TYPE_STRING )
 			{
 				return commandOutput;
 			}
