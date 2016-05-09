@@ -27,13 +27,18 @@
 #include "dansh_command_echo.hpp"
 #include "dansh_command_var.hpp"
 
+#include <curses.h>
+#include <signal.h>
+
+static void finish(int sig);
+
 
 using namespace std;
 
 
 bool		gKeepRunning = true;
 bool		gRunningScript = false;	// Set to true when running our initialization script.
-
+WINDOW *	gCursesWindow = NULL;
 
 
 dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
@@ -388,7 +393,10 @@ void	run_stream( FILE* inFile )
 	while( localKeepRunning && gKeepRunning )
 	{
 		char	currCh = 0;
-		currCh = getc(inFile);
+		if( gCursesWindow )
+			currCh = getch();
+		else
+			currCh = getc(inFile);
 		if( currCh == EOF || currCh == '\0' )
 		{
 			process_one_line( currLine );
@@ -408,11 +416,61 @@ void	run_stream( FILE* inFile )
 }
 
 
-int main(int argc, const char * argv[])
+int	main(int argc, char *argv[])
 {
-	initialize();
+	const char*	theTerm = getenv("TERM");
+	bool		shouldTryCurses = theTerm && theTerm[0] != 0;
+	if( shouldTryCurses && argc > 1 && strcasecmp(argv[1],"--curses") == 0 )
+	{
+		/* initialize your non-curses data structures here */
+		
+		(void) signal(SIGINT, finish);      /* arrange interrupts to terminate */
+
+		gCursesWindow = initscr();      /* initialize the curses library */
+		keypad(stdscr, TRUE);  /* enable keyboard mapping */
+		(void) nonl();         /* tell curses not to do NL->CR/NL on output */
+		(void) cbreak();       /* take input chars one at a time, no wait for \n */
+		scrollok( gCursesWindow, TRUE );
+		
+		if (has_colors())
+		{
+			start_color();
+
+			/*
+			 * Simple color assignment, often all we need.
+			 */
+			init_pair(COLOR_BLACK, COLOR_BLACK, COLOR_BLACK);
+			init_pair(COLOR_GREEN, COLOR_GREEN, COLOR_BLACK);
+			init_pair(COLOR_RED, COLOR_RED, COLOR_BLACK);
+			init_pair(COLOR_CYAN, COLOR_CYAN, COLOR_BLACK);
+			init_pair(COLOR_WHITE, COLOR_WHITE, COLOR_BLACK);
+			init_pair(COLOR_MAGENTA, COLOR_MAGENTA, COLOR_BLACK);
+			init_pair(COLOR_BLUE, COLOR_BLUE, COLOR_BLACK);
+			init_pair(COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK);
+		}
+		
+		cout << "Curses initialized." << endl;
+		
+		initialize();
+
+		run_stream(stdin);
+
+		finish(0);               /* we're done */
+	}
+	else
+	{
+		initialize();
+		run_stream(stdin);
+	}
 	
-	run_stream(stdin);
-	
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
+}
+
+static void finish(int sig)
+{
+    endwin();
+
+    /* do your non-curses wrapup here */
+
+    exit(EXIT_SUCCESS);
 }
