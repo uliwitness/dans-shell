@@ -176,16 +176,19 @@ dansh_statement_ptr		dansh_statement::eval()
 		bool				isFirst = true;
 		for( const dansh_statement_ptr currParam : params )
 		{
+			dansh_statement_ptr	evalName = currParam->eval();
+			if( !evalName )
+				return nullptr;
 			if( isFirst )
 			{
 				isFirst = false;
 				if( firstParamIsName )
-					evaluated->name = currParam->eval()->name;
+					evaluated->name = evalName->name;
 				else
-					evaluated->params.push_back( currParam->eval() );
+					evaluated->params.push_back( evalName );
 			}
 			else
-				evaluated->params.push_back( currParam->eval() );
+				evaluated->params.push_back( evalName );
 		}
 		
 		map<string,dansh_built_in_lambda>::const_iterator	foundCommand = gBuiltInCommands.find(evaluated->name);
