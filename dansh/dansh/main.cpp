@@ -80,11 +80,25 @@ void	initialize()
     gBuiltInCommands["=var.*"] = dansh_command_set_var;
     gBuiltInCommands["$*"] = dansh_command_var;
     gBuiltInCommands["=$*"] = dansh_command_set_var;
-    
-    
-	gBuiltInCommands["echo"] = dansh_command_echo;
 	
-	include_script("/etc/danshrc");
+	gBuiltInCommands["source"] = []( dansh_statement_ptr params )
+	{
+		dansh_statement_ptr	currentDir( new dansh_statement );
+		currentDir->type = DANSH_STATEMENT_TYPE_STRING;
+		if( params->params.size() < 1 )
+		{
+			currentDir->name.append("Expected path of script as parameter to 'source'.");
+		}
+		else if( !include_script( params->params[0]->name.c_str() ) )
+		{
+			currentDir->name.append("Can't find script file \"");
+			currentDir->name.append(params->params[0]->name);
+			currentDir->name.append("\".");
+		}
+		return currentDir;
+	};
+	
+	gBuiltInCommands["echo"] = dansh_command_echo;
 	
 	string	runCommandsFile(userHomeDir);
 	runCommandsFile.append(1,'/');
@@ -96,6 +110,7 @@ void	initialize()
 bool	include_script( const string& filePath )
 {
 	bool	didRun = false;
+	bool	oldRunningScript = gRunningScript;
 	
 	gRunningScript = true;
 	FILE*		scriptFile = fopen(filePath.c_str(), "r");
@@ -105,7 +120,7 @@ bool	include_script( const string& filePath )
 		fclose( scriptFile );
 		didRun = true;
 	}
-	gRunningScript = false;
+	gRunningScript = oldRunningScript;
 	
 	return didRun;
 }
