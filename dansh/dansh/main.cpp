@@ -284,7 +284,7 @@ dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vec
 		// Now, parse parameter list, if any:
 		else if( !parse_parameter_list( tokens, currToken,  currStatement, bracketsOptional ) )
 			return dansh_statement_ptr();
-		currStatement->type = DANSH_STATEMENT_TYPE_FUNCTION;
+		currStatement->type = bracketsOptional ? DANSH_STATEMENT_TYPE_COMMAND : DANSH_STATEMENT_TYPE_FUNCTION;
 	}
 	else if( currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
 	{
@@ -299,7 +299,7 @@ dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vec
 		// Now, parse parameter list, if any:
 		if( !parse_parameter_list( tokens, currToken,  currStatement, bracketsOptional ) )
 			return dansh_statement_ptr();
-		currStatement->type = DANSH_STATEMENT_TYPE_FUNCTION;
+		currStatement->type = bracketsOptional ? DANSH_STATEMENT_TYPE_COMMAND : DANSH_STATEMENT_TYPE_FUNCTION;
 	}
 	else
 	{

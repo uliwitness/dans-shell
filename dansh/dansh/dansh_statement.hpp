@@ -26,6 +26,7 @@ typedef std::shared_ptr<dansh_statement> dansh_statement_ptr;
 typedef enum
 {
 	DANSH_STATEMENT_INVALID,		// Error indicator.
+	DANSH_STATEMENT_TYPE_COMMAND,	// Identical to function, but we don't capture its in/output.
 	DANSH_STATEMENT_TYPE_FUNCTION,
 	DANSH_STATEMENT_TYPE_STRING,
 	DANSH_STATEMENT_TYPE_NUMBER

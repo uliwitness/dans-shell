@@ -73,16 +73,19 @@ string	path_for_command( const string & inCommandName )
 }
 
 
-dansh_statement_ptr	launch_executable( const string& name, vector<dansh_statement_ptr> params )
+dansh_statement_ptr	launch_executable( const string& name, vector<dansh_statement_ptr> params, bool captureOutput )
 {
 	if( name.length() == 0 && params.size() == 0 )
 		return dansh_statement_ptr();
 	
-	int pipeOutputInputFDs[2];
-	if( pipe(pipeOutputInputFDs) == -1 )
+	int pipeOutputInputFDs[2] = {};
+	if( captureOutput )
 	{
-		perror("dansh");
-		return dansh_statement_ptr();
+		if( pipe(pipeOutputInputFDs) == -1 )
+		{
+			perror("dansh");
+			return dansh_statement_ptr();
+		}
 	}
 	
 	int		status = 0;
@@ -98,13 +101,16 @@ dansh_statement_ptr	launch_executable( const string& name, vector<dansh_statemen
 		}
 		args.push_back(nullptr);
 		
-		// Replace our stdout with the pipe's input:
-		while( (dup2(pipeOutputInputFDs[1], STDOUT_FILENO) == -1) && (errno == EINTR) )
+		if( captureOutput )
 		{
-			// We repeat this until we're no longer interrupted by some signal.
+			// Replace our stdout with the pipe's input:
+			while( (dup2(pipeOutputInputFDs[1], STDOUT_FILENO) == -1) && (errno == EINTR) )
+			{
+				// We repeat this until we're no longer interrupted by some signal.
+			}
+			close( pipeOutputInputFDs[1] );	// Close original, we just made a copy.
+			close( pipeOutputInputFDs[0] );
 		}
-		close( pipeOutputInputFDs[1] );	// Close original, we just made a copy.
-		close( pipeOutputInputFDs[0] );
 		
 		if( execvp(args[0], args.data()) == -1 )	// Replace ourselves with the executable to launch:
 		{
@@ -119,39 +125,44 @@ dansh_statement_ptr	launch_executable( const string& name, vector<dansh_statemen
 	}
 	else	// Parent process?
 	{
-		close( pipeOutputInputFDs[1] );	// We don't need the entrance, only the child process.
+		dansh_statement_ptr	actualOutput;
 		
-		char				buffer[4096];
-		dansh_statement_ptr	actualOutput( new dansh_statement );
-		actualOutput->type = DANSH_STATEMENT_TYPE_STRING;
-		//actualOutput.name.append(1,'[');
-		while( true )
+		if( captureOutput )
 		{
-			ssize_t count = read( pipeOutputInputFDs[0], buffer, sizeof(buffer) );
-			if( count == -1 )
+			close( pipeOutputInputFDs[1] );	// We don't need the entrance, only the child process.
+		
+			char				buffer[4096];
+			actualOutput = std::make_shared<dansh_statement>();
+			actualOutput->type = DANSH_STATEMENT_TYPE_STRING;
+			//actualOutput.name.append(1,'[');
+			while( true )
 			{
-				if (errno == EINTR)
+				ssize_t count = read( pipeOutputInputFDs[0], buffer, sizeof(buffer) );
+				if( count == -1 )
 				{
-					continue;
+					if (errno == EINTR)
+					{
+						continue;
+					}
+					else
+					{
+						perror("dansh");
+						return dansh_statement_ptr();
+					}
+				}
+				else if( count == 0 )
+				{
+					break;
 				}
 				else
 				{
-					perror("dansh");
-					return dansh_statement_ptr();
+					actualOutput->name.append( buffer, count );
 				}
 			}
-			else if( count == 0 )
-			{
-				break;
-			}
-			else
-			{
-				actualOutput->name.append( buffer, count );
-			}
+			close( pipeOutputInputFDs[0] );
+			//actualOutput.name.append(1,']');
 		}
-		close( pipeOutputInputFDs[0] );
-		//actualOutput.name.append(1,']');
-
+		
 		do // Wait for the child process to quit:
 		{
 			waitpid( childPID, &status, WUNTRACED );
@@ -167,7 +178,7 @@ dansh_statement_ptr	launch_executable( const string& name, vector<dansh_statemen
 
 dansh_statement_ptr		dansh_statement::eval()
 {
-	if( type == DANSH_STATEMENT_TYPE_FUNCTION )
+	if( type == DANSH_STATEMENT_TYPE_FUNCTION || type == DANSH_STATEMENT_TYPE_COMMAND )
 	{
 		dansh_statement_ptr	evaluated( new dansh_statement );
 		bool				firstParamIsName = (name.length() == 0);	// No name? Use first param as name!
@@ -217,7 +228,7 @@ dansh_statement_ptr		dansh_statement::eval()
 		{
 			string	commandPath = path_for_command( evaluated->name );
 			
-			dansh_statement_ptr	commandOutput = launch_executable( commandPath, evaluated->params );
+			dansh_statement_ptr	commandOutput = launch_executable( commandPath, evaluated->params, (type == DANSH_STATEMENT_TYPE_FUNCTION) );
 			if( commandOutput && commandOutput->type == DANSH_STATEMENT_TYPE_STRING )
 			{
 				return commandOutput;
