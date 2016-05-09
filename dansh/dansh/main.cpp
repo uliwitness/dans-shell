@@ -32,10 +32,13 @@ using namespace std;
 
 
 bool		gKeepRunning = true;
+bool		gRunningScript = false;	// Set to true when running our initialization script.
 
 
 
 dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
+bool	include_script( const string& filePath );
+void	run_stream( FILE* inFile );
 
 
 void	initialize()
@@ -80,6 +83,31 @@ void	initialize()
     
     
 	gBuiltInCommands["echo"] = dansh_command_echo;
+	
+	include_script("/etc/danshrc");
+	
+	string	runCommandsFile(userHomeDir);
+	runCommandsFile.append(1,'/');
+	runCommandsFile.append(".danshrc");
+	include_script(runCommandsFile);
+}
+
+
+bool	include_script( const string& filePath )
+{
+	bool	didRun = false;
+	
+	gRunningScript = true;
+	FILE*		scriptFile = fopen(filePath.c_str(), "r");
+	if( scriptFile )
+	{
+		run_stream( scriptFile );
+		fclose( scriptFile );
+		didRun = true;
+	}
+	gRunningScript = false;
+	
+	return didRun;
 }
 
 
@@ -290,7 +318,7 @@ void	process_one_line( const string & currLine )
 
 void	print_prompt()
 {
-	if( isatty(fileno(stdin)) )
+	if( isatty(fileno(stdin)) && !gRunningScript )
 	{
 		// Print current folder's name:
 		char*	currentWorkingDirectory = getcwd( NULL, 0 );
@@ -335,34 +363,41 @@ void	print_prompt()
 }
 
 
-int main(int argc, const char * argv[])
+void	run_stream( FILE* inFile )
 {
-	initialize();
-	
 	string		currLine;
+	bool		localKeepRunning = true;
 	
 	print_prompt();
 	
-	while( gKeepRunning )
+	while( localKeepRunning && gKeepRunning )
 	{
 		char	currCh = 0;
-		currCh = getc(stdin);
+		currCh = getc(inFile);
 		if( currCh == EOF || currCh == '\0' )
 		{
 			process_one_line( currLine );
-			gKeepRunning = false;
+			localKeepRunning = false;
 		}
 		else if( currCh == '\n' || currCh == '\r' )
 		{
 			process_one_line( currLine );
 			currLine.erase();
 			
-			if( gKeepRunning )
+			if( gKeepRunning && localKeepRunning )
 				print_prompt();
 		}
 		else
 			currLine.append( 1, currCh );
 	}
+}
+
+
+int main(int argc, const char * argv[])
+{
+	initialize();
+	
+	run_stream(stdin);
 	
     return EXIT_SUCCESS;
 }
