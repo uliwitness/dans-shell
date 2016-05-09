@@ -109,6 +109,10 @@ Returns the full path of the executable that Dan's Shell will run if you invoke 
 
 Logs all its arguments to standard output, followed by a line break.
 
+	source( "/path/to/file" )
+
+Runs the given Dan's Shell script in the context of the current shell. This lets you pre-define variables etc.
+
 	exit()
 
 Quit Dan's Shell.
