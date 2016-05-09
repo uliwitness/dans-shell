@@ -1,5 +1,15 @@
 #Dan's Shell
 
+##Concept
+
+The idea behind Dan's Shell is to provide a simple, familiar and regular syntax that
+encourages correct and secure code. In particular, the desire is to make it impossible
+to incorrectly quote variables and cause them to be executed, or to cause empty/undefined
+variables to quietly disappear, causing parameter labels to be interpreted as values or
+causing two concatenated paths to be interpreted as "/" and thus delete your hard disk
+or whatever.
+
+
 ##Syntax
 
 To call a command, use the general syntax
@@ -16,7 +26,7 @@ away the brackets, so it looks almost like Bash or other shell languages.
 If you want to build the name of a command using code (e.g. to generate the pathname for
 an executable), you replace the name in your function call with the expression in brackets.
 
-Currently, two kinds of values are supported:
+Currently, four kinds of values are supported:
 
 	"Quoted String"
 
@@ -31,6 +41,24 @@ a carriage return (ASCII 13, classic MacOS line break). For a Windows line break
 	
 Number. A number can consist only of numeric characters and may optionally contain
 a decimal point.
+
+	$myVariable
+
+A variable local to this shell. You can use the assignment operator to assign
+a value to this variable, like so:
+
+	$myVariable = 15
+
+In addition, equivalent syntax is provided that looks more Dan's Shell-ish:
+
+	var.myVariable
+
+This is consistent with environment variables, which are passed on to
+commands that are executed and are referenced by writing:
+
+	env.PATH
+
+(to get the "PATH" environment variable, for example)
 
 	name( -label "paramOne", --label2, "param3" )
 
@@ -91,11 +119,8 @@ To add comments to a line (most useful when running scripts), use the "#" charac
 starting with the "#" character to the end of the line will be ignored.
 
 
-##Concept
+##Shell Scripts
 
-The idea behind Dan's Shell is to provide a simple, familiar and regular syntax that
-encourages correct and secure code. In particular, the desire is to make it impossible
-to incorrectly quote variables and cause them to be executed, or to cause empty/undefined
-variables to quietly disappear, causing parameter labels to be interpreted as values or
-causing two concatenated paths to be interpreted as "/" and thus delete your hard disk
-or whatever.
+Dan's Shell is suitable for running shell scripts. Just pipe them into dansh's stdin, like
+you would do for any other shell. You can of course also start a script text file with a
+shebang to have the OS automatically run it in Dan's Shell.
