@@ -14,6 +14,7 @@
 #include <map>
 #include <unistd.h>
 #include <pwd.h>
+#include <sstream>
 
 #include "dansh_statement.hpp"
 #include "dansh_token.hpp"
@@ -27,13 +28,18 @@
 #include "dansh_command_echo.hpp"
 #include "dansh_command_var.hpp"
 
+#include <readline/readline.h>
+#include <readline/history.h>
+#include <termios.h>
+
 
 using namespace std;
 
 
-bool		gKeepRunning = true;
-bool		gRunningScript = false;	// Set to true when running our initialization script.
-
+bool					gKeepRunning = true;
+bool					gRunningScript = false;	// Set to true when running our initialization script.
+bool					gIsTerminal = false;		// Any kind of Terminal, smart or dumb.
+bool					gIsSmartTerminal = false;	// Smart terminal like Terminal.app, not dumb like Xcode's console.
 
 dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
 bool	include_script( const string& filePath );
@@ -42,6 +48,17 @@ void	run_stream( FILE* inFile );
 
 void	initialize()
 {
+	gIsTerminal = isatty(fileno(stdin));
+	const char*	theTerm = getenv("TERM");
+	gIsSmartTerminal = gIsTerminal && theTerm && strlen(theTerm) > 0;
+	if( gIsSmartTerminal )
+	{
+		rl_readline_name = (char*)"dansh";
+		readline_echoing_p = false;
+
+		rl_initialize();
+	}
+	
 	string	userHomeDir = user_home_dir();
 	if( userHomeDir.length() != 0 )
 		chdir( userHomeDir.c_str() );
@@ -330,9 +347,10 @@ void	process_one_line( const string & currLine )
 }
 
 
-void	print_prompt()
+std::string	prompt_string()
 {
-	if( isatty(fileno(stdin)) && !gRunningScript )
+	std::stringstream	outPrompt;
+	if( gIsTerminal && !gRunningScript )
 	{
 		// Print current folder's name:
 		char*	currentWorkingDirectory = getcwd( NULL, 0 );
@@ -340,17 +358,17 @@ void	print_prompt()
 		{
 			if( strcmp(currentWorkingDirectory,"/") == 0 )
 			{
-				cout << "/ ";
+				outPrompt << "/ ";
 			}
 			else if( user_home_dir().compare(currentWorkingDirectory) == 0 )
 			{
-				cout << "~ ";
+				outPrompt << "~ ";
 			}
 			else
 			{
 				char*		lastPathComponent = strrchr( currentWorkingDirectory, '/' );
 				if( lastPathComponent )
-					cout << (lastPathComponent +1) << " ";
+					outPrompt << (lastPathComponent +1) << " ";
 			}
 			free( currentWorkingDirectory );
 		}
@@ -366,14 +384,16 @@ void	print_prompt()
 			int				success = getpwuid_r( uid, &pw, buffer, bufsize, &result );
 			if( success == 0 && result )
 			{
-				cout << result->pw_name;
+				outPrompt << result->pw_name;
 			}
 			endpwent();
 		}
 		
 		// Print "type here" indicator:
-		cout << "> ";
+		outPrompt << "> ";
 	}
+	
+	return outPrompt.str();
 }
 
 
@@ -382,27 +402,42 @@ void	run_stream( FILE* inFile )
 	string		currLine;
 	bool		localKeepRunning = true;
 	
-	print_prompt();
-	
 	while( localKeepRunning && gKeepRunning )
 	{
-		int	currCh = 0;
-		currCh = getc(inFile);
-		if( currCh == EOF || currCh == '\0' )
+		if( gIsSmartTerminal )
 		{
-			process_one_line( currLine );
-			localKeepRunning = false;
-		}
-		else if( currCh == '\n' || currCh == '\r' )
-		{
-			process_one_line( currLine );
-			currLine.erase();
-			
-			if( gKeepRunning && localKeepRunning )
-				print_prompt();
+			const char*	cmdline = readline( prompt_string().c_str() );
+			if( !cmdline )
+				localKeepRunning = false;
+			else if( strlen(cmdline) > 0 )
+			{
+				add_history( cmdline );
+				process_one_line( cmdline );
+			}
 		}
 		else
-			currLine.append( 1, currCh );
+		{
+			int	currCh = 0;
+			if( currLine.size() == 0 )
+			{
+				std::string		prompt = prompt_string();
+				if( prompt.size() != 0 )
+					cout << prompt;
+			}
+			currCh = getc(inFile);
+			if( currCh == EOF || currCh == '\0' )
+			{
+				process_one_line( currLine );
+				localKeepRunning = false;
+			}
+			else if( currCh == '\n' || currCh == '\r' )
+			{
+				process_one_line( currLine );
+				currLine.erase();
+			}
+			else
+				currLine.append( 1, currCh );
+		}
 	}
 }
 
