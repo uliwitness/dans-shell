@@ -231,6 +231,11 @@ dansh_statement_ptr		dansh_statement::eval()
 			dansh_statement_ptr	commandOutput = launch_executable( commandPath, evaluated->params, (type == DANSH_STATEMENT_TYPE_FUNCTION) );
 			if( commandOutput && commandOutput->type == DANSH_STATEMENT_TYPE_STRING )
 			{
+				if( commandOutput && commandOutput->name.size() > 0
+					&& commandOutput->name.rfind('\n') == (commandOutput->name.size() -1) )
+				{
+					commandOutput->name.erase( commandOutput->name.size() -1 );
+				}
 				return commandOutput;
 			}
             else if( evaluated->name.find('=') == 0 )    // Starts with = sign? Assignment to something nonsensical.
