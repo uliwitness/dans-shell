@@ -29,7 +29,8 @@ typedef enum
 	DANSH_STATEMENT_TYPE_COMMAND,	// Identical to function, but we don't capture its in/output.
 	DANSH_STATEMENT_TYPE_FUNCTION,
 	DANSH_STATEMENT_TYPE_STRING,
-	DANSH_STATEMENT_TYPE_NUMBER
+	DANSH_STATEMENT_TYPE_NUMBER,
+	DANSH_STATEMENT_TYPE_PIPE
 } dansh_statement_type;
 
 

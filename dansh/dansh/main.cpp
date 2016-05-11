@@ -41,7 +41,7 @@ bool					gRunningScript = false;	// Set to true when running our initialization 
 bool					gIsTerminal = false;		// Any kind of Terminal, smart or dumb.
 bool					gIsSmartTerminal = false;	// Smart terminal like Terminal.app, not dumb like Xcode's console.
 
-dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
+dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false, bool noPipes = false );
 bool	include_script( const string& filePath );
 void	run_stream( FILE* inFile );
 
@@ -142,7 +142,7 @@ bool	include_script( const string& filePath )
 }
 
 
-dansh_statement_ptr	parse_one_value( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional = false )
+dansh_statement_ptr	parse_one_value( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional = false, bool noPipes = false )
 {
 	if( currToken == tokens.end() )
 		return dansh_statement_ptr();
@@ -165,7 +165,7 @@ dansh_statement_ptr	parse_one_value( const vector<dansh_token> & tokens, vector<
 		return currStatement;
 	}
 	else
-		return parse_one_statement( tokens, currToken, bracketsOptional );
+		return parse_one_statement( tokens, currToken, bracketsOptional, noPipes );
 }
 
 
@@ -174,11 +174,15 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 	if( currToken == tokens.end() )
 		return true;
 	
+	bool	hadOpeningBracket = false;
+	
 	if( currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
+	{
 		currToken++;
+		hadOpeningBracket = true;
+	}
 	else if( !bracketsOptional )
 		return true;
-
 	while( true )
 	{
 		if( currToken == tokens.end() )
@@ -192,7 +196,7 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 				return true;
 		}
 
-		if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
+		if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET && hadOpeningBracket )
 		{
 			currToken++;
 			return true;
@@ -211,9 +215,10 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 		}
 		
 		if( currToken != tokens.end()
-			&& (!hadLabel || (currToken->type != DANSH_TOKEN_TYPE_LABEL && currToken->type != DANSH_TOKEN_TYPE_COMMA && currToken->type != DANSH_TOKEN_TYPE_CLOSING_BRACKET)) )
+			&& (!hadLabel || (currToken->type != DANSH_TOKEN_TYPE_LABEL))
+			&& currToken->type != DANSH_TOKEN_TYPE_COMMA && currToken->type != DANSH_TOKEN_TYPE_PIPE && currToken->type != DANSH_TOKEN_TYPE_LESS_THAN && currToken->type != DANSH_TOKEN_TYPE_GREATER_THAN && currToken->type != DANSH_TOKEN_TYPE_CLOSING_BRACKET )
 		{
-			targetStatement->params.push_back( parse_one_value( tokens, currToken ) );
+			targetStatement->params.push_back( parse_one_value( tokens, currToken, false, true ) );	// Don't swallow up pipes when parsing parameters, would give wrong results in bracketsOptional case, and if we're without paremeters and used as a param to a bracketsOptional command, bracketsOptional for us is actually false.
 			if( (*targetStatement->params.rbegin())->type == DANSH_STATEMENT_INVALID )
 				return false;
 		}
@@ -228,12 +233,17 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 			else
 				return true;
 		}
-		if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET )
+		if( currToken->type == DANSH_TOKEN_TYPE_CLOSING_BRACKET && hadOpeningBracket )
 		{
 			currToken++;
 			break;
 		}
-		if( currToken->type != DANSH_TOKEN_TYPE_COMMA )
+		if( (currToken->type == DANSH_TOKEN_TYPE_PIPE || currToken->type == DANSH_TOKEN_TYPE_LESS_THAN
+			|| currToken->type == DANSH_TOKEN_TYPE_GREATER_THAN) && !hadOpeningBracket )
+		{
+			break;	// We're done, let outside parse piped command.
+		}
+		else if( currToken->type != DANSH_TOKEN_TYPE_COMMA )
 		{
 			cerr << "Expected \",\" to separate parameters, or \")\" to end parameter list. Found \"" << currToken->text.c_str() << "\"." << endl;
 			return false;
@@ -245,7 +255,7 @@ bool	parse_parameter_list( const vector<dansh_token> & tokens, vector<dansh_toke
 }
 
 
-dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional )
+dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool bracketsOptional, bool noPipes )
 {
 	if( currToken == tokens.end() )
 		return dansh_statement_ptr();
@@ -296,6 +306,19 @@ dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vec
 		else if( !parse_parameter_list( tokens, currToken,  currStatement, bracketsOptional ) )
 			return dansh_statement_ptr();
 		currStatement->type = bracketsOptional ? DANSH_STATEMENT_TYPE_COMMAND : DANSH_STATEMENT_TYPE_FUNCTION;
+		
+		if( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_PIPE && !noPipes )
+		{
+			dansh_statement_ptr	pipeStatement( new dansh_statement );
+			pipeStatement->type = DANSH_STATEMENT_TYPE_PIPE;
+			pipeStatement->params.push_back( currStatement );
+			currStatement = pipeStatement;
+			while( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_PIPE )
+			{
+				currToken++;
+				pipeStatement->params.push_back( parse_one_statement( tokens, currToken, bracketsOptional, true ) );
+			}
+		}
 	}
 	else if( currToken->type == DANSH_TOKEN_TYPE_OPENING_BRACKET )
 	{
@@ -311,6 +334,19 @@ dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vec
 		if( !parse_parameter_list( tokens, currToken,  currStatement, bracketsOptional ) )
 			return dansh_statement_ptr();
 		currStatement->type = bracketsOptional ? DANSH_STATEMENT_TYPE_COMMAND : DANSH_STATEMENT_TYPE_FUNCTION;
+		
+		if( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_PIPE && !noPipes )
+		{
+			dansh_statement_ptr	pipeStatement( new dansh_statement );
+			pipeStatement->type = DANSH_STATEMENT_TYPE_PIPE;
+			pipeStatement->params.push_back( currStatement );
+			currStatement = pipeStatement;
+			while( currToken != tokens.end() && currToken->type == DANSH_TOKEN_TYPE_PIPE )
+			{
+				currToken++;
+				pipeStatement->params.push_back( parse_one_statement( tokens, currToken, bracketsOptional, true ) );
+			}
+		}
 	}
 	else
 	{
@@ -337,9 +373,9 @@ void	process_one_line( const string & currLine )
 	dansh_statement_ptr	currStatement = parse_one_statement( tokens, currToken, true );
     if( currStatement )
     {
-//      currStatement.print(cout);
-//      cout << endl;
-        
+//		currStatement->print(cout);
+//		cout << endl;
+		
         currStatement = currStatement->eval();
         if( currStatement && (currStatement->type == DANSH_STATEMENT_TYPE_STRING || currStatement->name.length() != 0) )
             cout << currStatement->name << endl;

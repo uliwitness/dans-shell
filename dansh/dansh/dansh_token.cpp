@@ -80,6 +80,19 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						finish_token( "=", DANSH_TOKEN_TYPE_EQUAL, outTokens );
 						break;
 						
+
+					case '|':
+						finish_token( "|", DANSH_TOKEN_TYPE_PIPE, outTokens );
+						break;
+
+					case '<':
+						finish_token( "<", DANSH_TOKEN_TYPE_LESS_THAN, outTokens );
+						break;
+
+					case '>':
+						finish_token( ">", DANSH_TOKEN_TYPE_GREATER_THAN, outTokens );
+						break;
+
 					case '#':
 						return;	// We parse one line, comment goes to end of line. we're done.
 						break;
@@ -147,6 +160,28 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						finish_token( "=", DANSH_TOKEN_TYPE_EQUAL, outTokens );
 						break;
 
+
+					case '|':
+						finish_token( currTokenString, currType, outTokens );
+						currTokenString.erase();
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
+						finish_token( "|", DANSH_TOKEN_TYPE_PIPE, outTokens );
+						break;
+
+					case '<':
+						finish_token( currTokenString, currType, outTokens );
+						currTokenString.erase();
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
+						finish_token( "<", DANSH_TOKEN_TYPE_LESS_THAN, outTokens );
+						break;
+
+					case '>':
+						finish_token( currTokenString, currType, outTokens );
+						currTokenString.erase();
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
+						finish_token( ">", DANSH_TOKEN_TYPE_GREATER_THAN, outTokens );
+						break;
+						
 					case '#':
 						finish_token( currTokenString, currType, outTokens );
 						return;	// We parse one line, comment goes to end of line. we're done.
@@ -270,6 +305,27 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 						finish_token( "=", DANSH_TOKEN_TYPE_EQUAL, outTokens );
 						break;
 
+					case '|':
+						finish_token( currTokenString, currType, outTokens );
+						currTokenString.erase();
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
+						finish_token( "|", DANSH_TOKEN_TYPE_PIPE, outTokens );
+						break;
+
+					case '<':
+						finish_token( currTokenString, currType, outTokens );
+						currTokenString.erase();
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
+						finish_token( "<", DANSH_TOKEN_TYPE_LESS_THAN, outTokens );
+						break;
+
+					case '>':
+						finish_token( currTokenString, currType, outTokens );
+						currTokenString.erase();
+						currType = DANSH_TOKEN_TYPE_WHITESPACE;
+						finish_token( ">", DANSH_TOKEN_TYPE_GREATER_THAN, outTokens );
+						break;
+
 					case '#':
 						finish_token( currTokenString, currType, outTokens );
 						return;	// We parse one line, comment goes to end of line. we're done.
@@ -292,6 +348,9 @@ void	tokenize( const string & currLine, vector<dansh_token> & outTokens )
 			case DANSH_TOKEN_TYPE_COMMA:
 			case DANSH_TOKEN_TYPE_DOT:
 			case DANSH_TOKEN_TYPE_EQUAL:
+			case DANSH_TOKEN_TYPE_PIPE:
+			case DANSH_TOKEN_TYPE_LESS_THAN:
+			case DANSH_TOKEN_TYPE_GREATER_THAN:
 				assert(false);	// Should never happen, operators are single-character tokens that immediately return to whitespace.
 				break;
 		}

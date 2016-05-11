@@ -258,7 +258,7 @@ dansh_statement_ptr		dansh_statement::eval()
 
 void	dansh_statement::print( ostream& outStream ) const
 {
-	if( type == DANSH_STATEMENT_TYPE_FUNCTION )
+	if( type == DANSH_STATEMENT_TYPE_FUNCTION || type == DANSH_STATEMENT_TYPE_COMMAND )
 	{
 		outStream << name << "( ";
 		bool	isFirst = true;
@@ -269,6 +269,23 @@ void	dansh_statement::print( ostream& outStream ) const
 			else
 				outStream << ", ";
 			currParam->print( outStream );
+		}
+		outStream << " )";
+	}
+	else if( type == DANSH_STATEMENT_TYPE_PIPE )
+	{
+		outStream << "( ";
+		bool	isFirst = true;
+		for( const dansh_statement_ptr currParam : params )
+		{
+			if( isFirst )
+				isFirst = false;
+			else
+				outStream << " | ";
+			if( !currParam )
+				outStream << "[null]";
+			else
+				currParam->print( outStream );
 		}
 		outStream << " )";
 	}
