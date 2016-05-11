@@ -14,6 +14,7 @@
 #include <map>
 #include <unistd.h>
 #include <pwd.h>
+#include <termios.h>
 
 #include "dansh_statement.hpp"
 #include "dansh_token.hpp"
@@ -388,11 +389,16 @@ void	run_stream( FILE* inFile )
 	string		currLine;
 	bool		localKeepRunning = true;
 	
+	enum readmode	{
+			READMODE_TEXT,
+			READMODE_ESC_SEQUENCE_1,
+			READMODE_ESC_SEQUENCE_2
+		}		readMode = READMODE_TEXT;
 	print_prompt();
 	
 	while( localKeepRunning && gKeepRunning )
 	{
-		char	currCh = 0;
+		int	currCh = 0;
 		if( gCursesWindow )
 			currCh = getch();
 		else
@@ -404,14 +410,71 @@ void	run_stream( FILE* inFile )
 		}
 		else if( currCh == '\n' || currCh == '\r' )
 		{
+			printf("\r\n");
 			process_one_line( currLine );
 			currLine.erase();
 			
 			if( gKeepRunning && localKeepRunning )
 				print_prompt();
 		}
+		else if( currCh == 127 )
+		{
+			printf("%c",127);
+		}
+		else if( readMode == READMODE_ESC_SEQUENCE_1 )
+		{
+			if( currCh == 91 )
+				readMode = READMODE_ESC_SEQUENCE_2;
+			else if( currCh == 27 )	// A 27 following another 27? Assume the first was junk, but stay in state 1 so we try to parse an arrow key again.
+			{
+				currLine.append( 1, 27 );
+			}
+			else
+			{
+				currLine.append( 1, 27 );
+				currLine.append( 1, currCh );
+				readMode = READMODE_TEXT;
+			}
+		}
+		else if( readMode == READMODE_ESC_SEQUENCE_2 )
+		{
+			if( currCh == 27 )	// A 27 following mid-sequence? Assume the first was junk, but return to state 1 so we try to parse an arrow key again.
+			{
+				currLine.append( 1, 27 );
+				currLine.append( 1, 91 );
+				readMode = READMODE_ESC_SEQUENCE_1;
+			}
+			else
+			{
+				if( currCh == 65 )	// Up arrow.
+				{
+					printf("\r");
+					print_prompt();
+				}
+				else if( currCh == 66 )	// Down arrow.
+				{
+					printf("\r");
+					print_prompt();
+				}
+				else if( currCh == 67 )	// Down arrow.
+					printf("[LEFT]");
+				else if( currCh == 68 )	// Down arrow.
+					printf("[RIGHT]");
+				else
+					printf("[%u]", (unsigned int)currCh);
+				readMode = READMODE_TEXT;
+			}
+		}
+		else if( currCh == 27 )	// Start of arrow key sequence?
+		{
+			readMode = READMODE_ESC_SEQUENCE_1;
+		}
 		else
+		{
 			currLine.append( 1, currCh );
+			printf("%c",currCh);
+			//printf("[%u]", (unsigned int)currCh);
+		}
 	}
 }
 
@@ -459,8 +522,18 @@ int	main(int argc, char *argv[])
 	}
 	else
 	{
+		// Turn off buffering for stdin so we get the characters as they are typed:
+		static struct termios oldSettings, desiredSettings;
+		tcgetattr( STDIN_FILENO, &oldSettings );	// Remember old attributes.
+		desiredSettings = oldSettings;
+		desiredSettings.c_lflag &= ~(ICANON | ECHO);			// Turn off having to press return at end.
+
+		tcsetattr( STDIN_FILENO, TCSANOW, &desiredSettings );	// Apply the settings. Now.
+
 		initialize();
 		run_stream(stdin);
+		
+		tcsetattr( STDIN_FILENO, TCSANOW, &oldSettings );	// Restore Terminal to previous settings.
 	}
 	
 	return EXIT_SUCCESS;
@@ -474,3 +547,4 @@ static void finish(int sig)
 
     exit(EXIT_SUCCESS);
 }
+
