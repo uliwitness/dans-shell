@@ -14,7 +14,6 @@
 #include <map>
 #include <unistd.h>
 #include <pwd.h>
-#include <termios.h>
 
 #include "dansh_statement.hpp"
 #include "dansh_token.hpp"
@@ -28,18 +27,12 @@
 #include "dansh_command_echo.hpp"
 #include "dansh_command_var.hpp"
 
-#include <curses.h>
-#include <signal.h>
-
-static void finish(int sig);
-
 
 using namespace std;
 
 
 bool		gKeepRunning = true;
 bool		gRunningScript = false;	// Set to true when running our initialization script.
-WINDOW *	gCursesWindow = NULL;
 
 
 dansh_statement_ptr	parse_one_statement( const vector<dansh_token> & tokens, vector<dansh_token>::const_iterator & currToken, bool isRoot = false );
@@ -389,20 +382,12 @@ void	run_stream( FILE* inFile )
 	string		currLine;
 	bool		localKeepRunning = true;
 	
-	enum readmode	{
-			READMODE_TEXT,
-			READMODE_ESC_SEQUENCE_1,
-			READMODE_ESC_SEQUENCE_2
-		}		readMode = READMODE_TEXT;
 	print_prompt();
 	
 	while( localKeepRunning && gKeepRunning )
 	{
 		int	currCh = 0;
-		if( gCursesWindow )
-			currCh = getch();
-		else
-			currCh = getc(inFile);
+		currCh = getc(inFile);
 		if( currCh == EOF || currCh == '\0' )
 		{
 			process_one_line( currLine );
@@ -410,141 +395,24 @@ void	run_stream( FILE* inFile )
 		}
 		else if( currCh == '\n' || currCh == '\r' )
 		{
-			printf("\r\n");
 			process_one_line( currLine );
 			currLine.erase();
 			
 			if( gKeepRunning && localKeepRunning )
 				print_prompt();
 		}
-		else if( currCh == 127 )
-		{
-			printf("%c",127);
-		}
-		else if( readMode == READMODE_ESC_SEQUENCE_1 )
-		{
-			if( currCh == 91 )
-				readMode = READMODE_ESC_SEQUENCE_2;
-			else if( currCh == 27 )	// A 27 following another 27? Assume the first was junk, but stay in state 1 so we try to parse an arrow key again.
-			{
-				currLine.append( 1, 27 );
-			}
-			else
-			{
-				currLine.append( 1, 27 );
-				currLine.append( 1, currCh );
-				readMode = READMODE_TEXT;
-			}
-		}
-		else if( readMode == READMODE_ESC_SEQUENCE_2 )
-		{
-			if( currCh == 27 )	// A 27 following mid-sequence? Assume the first was junk, but return to state 1 so we try to parse an arrow key again.
-			{
-				currLine.append( 1, 27 );
-				currLine.append( 1, 91 );
-				readMode = READMODE_ESC_SEQUENCE_1;
-			}
-			else
-			{
-				if( currCh == 65 )	// Up arrow.
-				{
-					printf("\r");
-					print_prompt();
-				}
-				else if( currCh == 66 )	// Down arrow.
-				{
-					printf("\r");
-					print_prompt();
-				}
-				else if( currCh == 67 )	// Down arrow.
-					printf("[LEFT]");
-				else if( currCh == 68 )	// Down arrow.
-					printf("[RIGHT]");
-				else
-					printf("[%u]", (unsigned int)currCh);
-				readMode = READMODE_TEXT;
-			}
-		}
-		else if( currCh == 27 )	// Start of arrow key sequence?
-		{
-			readMode = READMODE_ESC_SEQUENCE_1;
-		}
 		else
-		{
 			currLine.append( 1, currCh );
-			printf("%c",currCh);
-			//printf("[%u]", (unsigned int)currCh);
-		}
 	}
 }
 
 
 int	main(int argc, char *argv[])
 {
-	const char*	theTerm = getenv("TERM");
-	bool		shouldTryCurses = theTerm && theTerm[0] != 0;
-	if( shouldTryCurses && argc > 1 && strcasecmp(argv[1],"--curses") == 0 )
-	{
-		/* initialize your non-curses data structures here */
-		
-		(void) signal(SIGINT, finish);      /* arrange interrupts to terminate */
-
-		gCursesWindow = initscr();      /* initialize the curses library */
-		keypad(stdscr, TRUE);  /* enable keyboard mapping */
-		(void) nonl();         /* tell curses not to do NL->CR/NL on output */
-		(void) cbreak();       /* take input chars one at a time, no wait for \n */
-		scrollok( gCursesWindow, TRUE );
-		
-		if (has_colors())
-		{
-			start_color();
-
-			/*
-			 * Simple color assignment, often all we need.
-			 */
-			init_pair(COLOR_BLACK, COLOR_BLACK, COLOR_BLACK);
-			init_pair(COLOR_GREEN, COLOR_GREEN, COLOR_BLACK);
-			init_pair(COLOR_RED, COLOR_RED, COLOR_BLACK);
-			init_pair(COLOR_CYAN, COLOR_CYAN, COLOR_BLACK);
-			init_pair(COLOR_WHITE, COLOR_WHITE, COLOR_BLACK);
-			init_pair(COLOR_MAGENTA, COLOR_MAGENTA, COLOR_BLACK);
-			init_pair(COLOR_BLUE, COLOR_BLUE, COLOR_BLACK);
-			init_pair(COLOR_YELLOW, COLOR_YELLOW, COLOR_BLACK);
-		}
-		
-		cout << "Curses initialized." << endl;
-		
-		initialize();
-
-		run_stream(stdin);
-
-		finish(0);               /* we're done */
-	}
-	else
-	{
-		// Turn off buffering for stdin so we get the characters as they are typed:
-		static struct termios oldSettings, desiredSettings;
-		tcgetattr( STDIN_FILENO, &oldSettings );	// Remember old attributes.
-		desiredSettings = oldSettings;
-		desiredSettings.c_lflag &= ~(ICANON | ECHO);			// Turn off having to press return at end.
-
-		tcsetattr( STDIN_FILENO, TCSANOW, &desiredSettings );	// Apply the settings. Now.
-
-		initialize();
-		run_stream(stdin);
-		
-		tcsetattr( STDIN_FILENO, TCSANOW, &oldSettings );	// Restore Terminal to previous settings.
-	}
+	initialize();
+	run_stream(stdin);
 	
 	return EXIT_SUCCESS;
 }
 
-static void finish(int sig)
-{
-    endwin();
-
-    /* do your non-curses wrapup here */
-
-    exit(EXIT_SUCCESS);
-}
 
