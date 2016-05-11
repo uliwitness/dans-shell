@@ -125,16 +125,14 @@ dansh_statement_ptr	launch_executable( const string& name, vector<dansh_statemen
 	}
 	else	// Parent process?
 	{
-		dansh_statement_ptr	actualOutput;
+		dansh_statement_ptr	actualOutput( new dansh_statement );
+		actualOutput->type = DANSH_STATEMENT_TYPE_STRING;
 		
 		if( captureOutput )
 		{
 			close( pipeOutputInputFDs[1] );	// We don't need the entrance, only the child process.
 		
 			char				buffer[4096];
-			actualOutput = std::make_shared<dansh_statement>();
-			actualOutput->type = DANSH_STATEMENT_TYPE_STRING;
-			//actualOutput.name.append(1,'[');
 			while( true )
 			{
 				ssize_t count = read( pipeOutputInputFDs[0], buffer, sizeof(buffer) );
@@ -160,7 +158,6 @@ dansh_statement_ptr	launch_executable( const string& name, vector<dansh_statemen
 				}
 			}
 			close( pipeOutputInputFDs[0] );
-			//actualOutput.name.append(1,']');
 		}
 		
 		do // Wait for the child process to quit:
