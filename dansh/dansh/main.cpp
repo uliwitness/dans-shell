@@ -406,13 +406,15 @@ void	run_stream( FILE* inFile )
 	{
 		if( gIsSmartTerminal )
 		{
-			const char*	cmdline = readline( prompt_string().c_str() );
+			char*	cmdline = readline( prompt_string().c_str() );
 			if( !cmdline )
 				localKeepRunning = false;
 			else if( strlen(cmdline) > 0 )
 			{
 				add_history( cmdline );
 				process_one_line( cmdline );
+				free(cmdline);
+				cmdline = nullptr;
 			}
 		}
 		else
